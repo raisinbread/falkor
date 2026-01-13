@@ -62,10 +62,15 @@ function Falkor:onPrompt(line)
 end
 
 -- Start auto-attacking (set target in game, enable auto-attack)
+-- targetName: optional target name. If nil, just enables auto-attack without changing target
 function Falkor:startAttack(targetName)
-    send("settarget " .. targetName)
+    if targetName then
+        send("settarget " .. targetName)
+        Falkor:log("<green>Auto-attack enabled for: " .. targetName)
+    else
+        Falkor:log("<green>Auto-attack enabled (using current target).")
+    end
     self.autoAttack = true
-    Falkor:log("<green>Auto-attack enabled for: " .. targetName)
     -- Don't send initial bash - let the prompt handler do it when we have balance
 end
 
@@ -82,9 +87,20 @@ Falkor:initPlayer()
 -- PLAYER ALIASES AND TRIGGERS
 -- ============================================
 
--- Create alias: att <target>
-Falkor:registerAlias("aliasAttack", "^att (.+)$", [[
+-- Create alias: att [target] (target is optional)
+Falkor:registerAlias("aliasAttack", "^att( .+)?$", [[
     local target = matches[2]
+    if target then
+        -- Remove leading space
+        target = string.gsub(target, "^ ", "")
+    else
+        -- No target provided, try to use the last target from prompt
+        target = Falkor.lastTarget
+        if not target then
+            Falkor:log("<yellow>No target specified and no current target found. Use 'att <target>' to set a target.")
+            return
+        end
+    end
     Falkor:startAttack(target)
 ]])
 
