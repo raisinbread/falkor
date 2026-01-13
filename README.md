@@ -20,10 +20,9 @@ achaea/
 │   ├── rats.lua
 │   └── main.lua
 ├── build/            # Build output (generated, don't edit)
-│   └── achaea.lua
 ├── .vscode/          # VSCode configuration
 │   └── tasks.json    # Build task configuration
-├── build.sh          # Build script
+├── build.lua          # Build script
 └── README.md         # This file
 ```
 
@@ -32,27 +31,21 @@ achaea/
 To build the project, you can use either method:
 
 ### Command Line
-```bash
-./build.sh
+```lua
+lua build.lua
 ```
 
 ### VSCode
 Press `Cmd+Shift+B` (or `Ctrl+Shift+B` on Windows/Linux) to run the "🐉 Build Falkor" task.
 
-This will:
-1. Recursively find all `.lua` files in the `src/` directory
-2. Concatenate them in alphabetical order
-3. Output a single `achaea.lua` file to `build/`
-
-The build file (`achaea.lua`) can then be imported into Mudlet.
+Building creates a new Mudlet XML package file.
 
 ## Usage in Mudlet
 
-1. Build the project using `./build.sh`
+1. Build the project.
 2. Open Mudlet
-3. Import the file: `build/achaea.lua`
-   - You can drag and drop it into Mudlet, or
-   - Use Mudlet's Script Editor to load it
+3. Open the Module Manager () (Toolbox > Module Manager)
+4. Press the Install button, navigating to the XML file to complete the installation.
 
 ## Commands
 
@@ -73,6 +66,5 @@ The code follows Lua best practices:
 ## Development
 
 - Edit files in `src/` directory
-- Run `./build.sh` to rebuild
-- The build script preserves source file comments showing which file each section came from
-- Files are concatenated in alphabetical order for deterministic builds
+- Build the project
+- Issue the `falkor` command in Mudlet to re-load the module.
