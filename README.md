@@ -52,6 +52,7 @@ The build file (`achaea.lua`) can then be imported into Mudlet.
 - `stop` - Stop auto-attacking
 - `butterflies` - Toggle butterfly catching
 - `sellrats` - Walk to Hakhim and sell rats
+- `falkor` - Reinstall Falkor module
 
 ## Code Organization
 
