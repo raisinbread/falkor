@@ -18,6 +18,11 @@ function Runewarden:init()
     cecho("<yellow>Prompt configured to show target and balance.\n")
 end
 
+-- Execute bash attack against a target
+function Runewarden:bash(target)
+    send("swing " .. target)
+end
+
 -- Parse the prompt to extract current game state
 function Runewarden:parsePrompt(line)
     -- Example prompt: "777h, 500m, 2335e ex [[pygmy]]--"
@@ -44,7 +49,7 @@ function Runewarden:onPrompt(line)
     
     -- Priority 2: Auto-attack logic: if we want to auto-attack AND we have balance AND we have a target
     if self.autoAttack and hasBalance and target then
-        send("swing " .. target)
+        self:bash(target)
     end
     
     -- Update cached target for display
@@ -63,8 +68,8 @@ function Runewarden:startAttack(targetName)
     send("settarget " .. targetName)
     self.autoAttack = true
     cecho("<green>Auto-attack enabled for: " .. targetName .. "\n")
-    -- Initial swing
-    send("swing " .. targetName)
+    -- Initial bash
+    self:bash(targetName)
 end
 
 -- Stop auto-attacking
@@ -101,6 +106,7 @@ if Runewarden.triggerButterfly then killTrigger(Runewarden.triggerButterfly) end
 if Runewarden.triggerButterflyFailed then killTrigger(Runewarden.triggerButterflyFailed) end
 if Runewarden.triggerButterflyCaught then killTrigger(Runewarden.triggerButterflyCaught) end
 if Runewarden.triggerButterflyNone then killTrigger(Runewarden.triggerButterflyNone) end
+if Runewarden.triggerRatAppears then killTrigger(Runewarden.triggerRatAppears) end
 
 -- Create alias: att <target>
 Runewarden.aliasAttack = tempAlias("^att (.+)$", [[
@@ -169,6 +175,12 @@ Runewarden.triggerButterflyNone = tempTrigger("Alas! There are no butterflies to
         cecho("<yellow>No butterflies left. Clearing queue.\n")
         Runewarden.pendingButterflyCatches = 0
     end
+]])
+
+-- Create trigger: Auto-attack rats when they appear
+Runewarden.triggerRatAppears = tempRegexTrigger("(?:Your eyes are drawn to|With a squeak,) (?:a|an) \\w* ?rat|^A \\w* ?rat", [[
+    cecho("<cyan>Rat detected! Starting auto-attack...\n")
+    Runewarden:startAttack("rat")
 ]])
 
 cecho("<green>========================================\n")
