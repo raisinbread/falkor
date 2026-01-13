@@ -28,7 +28,7 @@ Falkor.aliasReinstall = tempAlias("^falkor$", [[
     
     -- Small delay to ensure clean uninstall, then reinstall
     tempTimer(0.5, function()
-        installModule("/Users/john/Projects/falkor/build/Falkor.xml")
+        installModule("__FALKOR_XML_PATH__")
         echo("\nFalkor module reloaded!\n")
     end)
 ]])

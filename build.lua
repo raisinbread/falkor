@@ -75,6 +75,20 @@ local function listLuaFiles(dir)
     return files
 end
 
+-- Get absolute path of current directory
+local function getAbsolutePath()
+    local handle = io.popen("pwd")
+    if handle then
+        local path = handle:read("*a"):gsub("%s+", "") -- Remove all whitespace including newlines
+        handle:close()
+        if path and path ~= "" then
+            return path
+        end
+    end
+    -- Fallback: try environment variable (Unix/macOS)
+    return os.getenv("PWD") or "."
+end
+
 -- Generate XML for a single script
 local function generateScript(name, content)
     return string.format([[			<Script isActive="yes" isFolder="no">
@@ -92,6 +106,10 @@ local function build()
         mkdir(BUILD_DIR)
     end
 
+    -- Get absolute path to the XML output file
+    local projectRoot = getAbsolutePath()
+    local xmlPath = projectRoot .. "/" .. OUTPUT_FILE
+
     -- Collect scripts in order
     local scripts = {}
     local processed = {}
@@ -101,6 +119,10 @@ local function build()
         local path = SRC_DIR .. "/" .. filename
         local content = readFile(path)
         if content then
+            -- Replace placeholder with actual XML path (only for main.lua)
+            if filename == "main.lua" then
+                content = content:gsub("__FALKOR_XML_PATH__", xmlPath)
+            end
             table.insert(scripts, generateScript(filename, content))
             processed[filename] = true
             print("  Added: " .. filename)
@@ -121,6 +143,10 @@ local function build()
         local path = SRC_DIR .. "/" .. filename
         local content = readFile(path)
         if content then
+            -- Replace placeholder with actual XML path (only for main.lua)
+            if filename == "main.lua" then
+                content = content:gsub("__FALKOR_XML_PATH__", xmlPath)
+            end
             table.insert(scripts, generateScript(filename, content))
             print("  Added: " .. filename .. " (extra)")
         end
