@@ -119,8 +119,8 @@ Runewarden.aliasButterfly = tempAlias("^butterflies$", [[
 ]])
 
 -- Create trigger: Prompt line (this fires on EVERY prompt)
--- Match the custom prompt format: "777h, 500m, 2335e ex [[pygmy]]--"
-Runewarden.triggerPrompt = tempRegexTrigger("^\\d+h, \\d+m, \\d+e .* \\[\\[.*\\]\\]--$", [[
+-- Match the custom prompt format: "777h, 500m, 2335e ex [[pygmy]]--" or "777h, 500m, 2335e ex []--"
+Runewarden.triggerPrompt = tempRegexTrigger("^\\d+h, \\d+m, \\d+e .* \\[.*\\]--$", [[
     Runewarden:onPrompt(line)
 ]])
 
