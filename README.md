@@ -13,17 +13,23 @@ achaea/
 │   └── main.lua
 ├── build/            # Build output (generated, don't edit)
 │   └── achaea.lua
+├── .vscode/          # VSCode configuration
+│   └── tasks.json    # Build task configuration
 ├── build.sh          # Build script
 └── README.md         # This file
 ```
 
 ## Building
 
-To build the project, run:
+To build the project, you can use either method:
 
+### Command Line
 ```bash
 ./build.sh
 ```
+
+### VSCode
+Press `Cmd+Shift+B` (or `Ctrl+Shift+B` on Windows/Linux) to run the "🐉 Build Falkor" task.
 
 This will:
 1. Recursively find all `.lua` files in the `src/` directory

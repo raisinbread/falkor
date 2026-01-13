@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+      {
+          "label": "🐉 Build Falkor",
+          "type": "shell",
+          "command": "lua",
+          "args": ["build.lua"],
+          "options": {
+              "cwd": "${workspaceFolder}"
+          },
+          "group": {
+              "kind": "build",
+              "isDefault": true
+          },
+          "presentation": {
+              "reveal": "always",
+              "panel": "new"
+          }
+      }
+  ]
+}
