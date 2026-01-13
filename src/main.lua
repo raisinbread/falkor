@@ -1,7 +1,46 @@
 -- Main initialization and startup message
--- This file runs after all modules are loaded
+-- This file provides utility functions and runs after all modules are loaded
 
 Falkor = Falkor or {}
+
+-- ============================================
+-- UTILITY FUNCTIONS
+-- ============================================
+
+-- Register a trigger with automatic cleanup
+-- name: unique identifier (e.g., "triggerPrompt")
+-- pattern: trigger pattern string
+-- code: trigger code string
+-- isRegex: true for regex trigger, false for simple trigger (default: false)
+function Falkor:registerTrigger(name, pattern, code, isRegex)
+    -- Clean up existing trigger if it exists
+    if self[name] then
+        killTrigger(self[name])
+        self[name] = nil
+    end
+    
+    -- Create new trigger
+    if isRegex then
+        self[name] = tempRegexTrigger(pattern, code)
+    else
+        self[name] = tempTrigger(pattern, code)
+    end
+end
+
+-- Register an alias with automatic cleanup
+-- name: unique identifier (e.g., "aliasAttack")
+-- pattern: alias pattern string
+-- code: alias code string
+function Falkor:registerAlias(name, pattern, code)
+    -- Clean up existing alias if it exists
+    if self[name] then
+        killAlias(self[name])
+        self[name] = nil
+    end
+    
+    -- Create new alias
+    self[name] = tempAlias(pattern, code)
+end
 
 Falkor:log("<green>========================================")
 Falkor:log("<green>Falkor Combat Script Loaded!")
@@ -20,11 +59,8 @@ Falkor:log("<green>========================================")
 -- MAIN ALIASES
 -- ============================================
 
--- Clean up existing items if they exist (for reloading)
-if Falkor.aliasReinstall then killAlias(Falkor.aliasReinstall) end
-
 -- Create alias: falkor (reinstall Falkor module)
-Falkor.aliasReinstall = tempAlias("^falkor$", [[
+Falkor:registerAlias("aliasReinstall", "^falkor$", [[
     -- Uninstall the existing module first
     uninstallModule("Falkor")
     

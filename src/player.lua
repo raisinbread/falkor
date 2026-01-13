@@ -82,52 +82,43 @@ Falkor:initPlayer()
 -- PLAYER ALIASES AND TRIGGERS
 -- ============================================
 
--- Clean up existing items if they exist (for reloading)
-if Falkor.aliasAttack then killAlias(Falkor.aliasAttack) end
-if Falkor.aliasStop then killAlias(Falkor.aliasStop) end
-if Falkor.triggerPrompt then killTrigger(Falkor.triggerPrompt) end
-if Falkor.triggerSlain then killTrigger(Falkor.triggerSlain) end
-if Falkor.triggerMissedTarget then killTrigger(Falkor.triggerMissedTarget) end
-if Falkor.triggerNoWeapon then killTrigger(Falkor.triggerNoWeapon) end
-if Falkor.triggerMustStand then killTrigger(Falkor.triggerMustStand) end
-
 -- Create alias: att <target>
-Falkor.aliasAttack = tempAlias("^att (.+)$", [[
+Falkor:registerAlias("aliasAttack", "^att (.+)$", [[
     local target = matches[2]
     Falkor:startAttack(target)
 ]])
 
 -- Create alias: stop
-Falkor.aliasStop = tempAlias("^stop$", [[
+Falkor:registerAlias("aliasStop", "^stop$", [[
     Falkor:stopAttack()
 ]])
 
 -- Create trigger: Prompt line (this fires on EVERY prompt)
 -- Match the custom prompt format: "777h, 500m, 2335e ex [[pygmy]]--" or "777h, 500m, 2335e ex []--"
-Falkor.triggerPrompt = tempRegexTrigger("^\\d+h, \\d+m, \\d+e .* \\[.*\\]--$", [[
+Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e .* \\[.*\\]--$", [[
     Falkor:onPrompt(line)
-]])
+]], true)
 
 -- Create trigger: Target slain (auto-disables attack)
-Falkor.triggerSlain = tempTrigger("You have slain", [[
+Falkor:registerTrigger("triggerSlain", "You have slain", [[
     Falkor:stopAttack()
     Falkor:log("<green>Target slain! Auto-attack disabled.")
 ]])
 
 -- Create trigger: Target not found (auto-disables attack)
-Falkor.triggerMissedTarget = tempTrigger("but see nothing by that name here!", [[
+Falkor:registerTrigger("triggerMissedTarget", "but see nothing by that name here!", [[
     Falkor:stopAttack()
     Falkor:log("<yellow>Target not found! Auto-attack disabled.")
 ]])
 
 -- Create trigger: No weapon wielded (auto-disables attack)
-Falkor.triggerNoWeapon = tempTrigger("You haven't got a weapon to do that with.", [[
+Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that with.", [[
     Falkor:stopAttack()
     Falkor:log("<red>No weapon wielded! Auto-attack disabled.")
 ]])
 
 -- Create trigger: Must stand first (auto-stand)
-Falkor.triggerMustStand = tempTrigger("You must be standing first.", [[
+Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
     if Falkor.autoAttack then
         Falkor:log("<yellow>Must stand! Standing up...")
         send("stand")

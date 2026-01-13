@@ -10,10 +10,10 @@ local OUTPUT_FILE = BUILD_DIR .. "/" .. PACKAGE_NAME .. ".xml"
 -- Load order for scripts (dependencies first)
 local LOAD_ORDER = {
     "log.lua",
+    "main.lua",  -- Load early to provide utility functions
     "player.lua",
     "butterflies.lua",
     "rats.lua",
-    "main.lua",
 }
 
 -- Escape XML special characters (only &, <, > need escaping in element content)
