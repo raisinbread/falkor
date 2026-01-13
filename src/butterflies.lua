@@ -6,6 +6,10 @@ Falkor = Falkor or {}
 function Falkor:initButterflies()
     self.catchButterflies = false  -- Flag for butterfly catching
     self.pendingButterflyCatches = 0  -- Number of butterfly catches queued
+    self.butterfliesStartPending = false  -- Flag for when we're starting butterfly catching
+    self.butterfliesStartStep = 0  -- Current step in the startup sequence
+    self.sellButterfliesPending = false  -- Flag for when we're selling butterflies
+    self.sellButterfliesStep = 0  -- Current step in the sell sequence
 end
 
 -- Toggle butterfly catching
@@ -18,6 +22,22 @@ function Falkor:toggleButterflies()
     end
 end
 
+-- Start butterfly catching setup (walk to Vellis and do the sequence)
+function Falkor:startButterflies()
+    Falkor:log("<cyan>Starting butterfly setup: walking to Vellis...")
+    send("walk to Vellis")
+    self.butterfliesStartPending = true
+    self.butterfliesStartStep = 0
+end
+
+-- Sell butterflies (walk to Vellis and give net)
+function Falkor:sellButterflies()
+    Falkor:log("<cyan>Selling butterflies: walking to Vellis...")
+    send("walk to Vellis")
+    self.sellButterfliesPending = true
+    self.sellButterfliesStep = 0
+end
+
 -- Initialize butterfly module
 Falkor:initButterflies()
 
@@ -27,15 +47,34 @@ Falkor:initButterflies()
 
 -- Clean up existing items if they exist (for reloading)
 if Falkor.aliasButterfly then killAlias(Falkor.aliasButterfly) end
+if Falkor.aliasButterfliesStart then killAlias(Falkor.aliasButterfliesStart) end
+if Falkor.aliasSellButterflies then killAlias(Falkor.aliasSellButterflies) end
 if Falkor.triggerButterfly then killTrigger(Falkor.triggerButterfly) end
 if Falkor.triggerButterflyFailed then killTrigger(Falkor.triggerButterflyFailed) end
 if Falkor.triggerButterflyCaught then killTrigger(Falkor.triggerButterflyCaught) end
 if Falkor.triggerButterflyNone then killTrigger(Falkor.triggerButterflyNone) end
 if Falkor.triggerButterflyNoNet then killTrigger(Falkor.triggerButterflyNoNet) end
+if Falkor.triggerButterfliesArrived then killTrigger(Falkor.triggerButterfliesArrived) end
+if Falkor.triggerButterfliesAgree then killTrigger(Falkor.triggerButterfliesAgree) end
+if Falkor.triggerButterfliesGreet then killTrigger(Falkor.triggerButterfliesGreet) end
+if Falkor.triggerButterfliesWield then killTrigger(Falkor.triggerButterfliesWield) end
+if Falkor.triggerVellisPresent then killTrigger(Falkor.triggerVellisPresent) end
+if Falkor.triggerSellButterfliesAgree then killTrigger(Falkor.triggerSellButterfliesAgree) end
+if Falkor.triggerSellButterfliesGive then killTrigger(Falkor.triggerSellButterfliesGive) end
 
 -- Create alias: butterflies (toggle butterfly catching)
 Falkor.aliasButterfly = tempAlias("^butterflies$", [[
     Falkor:toggleButterflies()
+]])
+
+-- Create alias: butterflies-start (walk to Vellis and set up butterfly catching)
+Falkor.aliasButterfliesStart = tempAlias("^butterflies-start$", [[
+    Falkor:startButterflies()
+]])
+
+-- Create alias: sellbutterflies (walk to Vellis and sell butterflies)
+Falkor.aliasSellButterflies = tempAlias("^sellbutterflies$", [[
+    Falkor:sellButterflies()
 ]])
 
 -- Create trigger: Catch butterflies when they appear in the room
@@ -78,5 +117,109 @@ Falkor.triggerButterflyNoNet = tempTrigger("You need to be wielding a butterfly 
     if Falkor.catchButterflies and Falkor.pendingButterflyCatches > 0 then
         Falkor:log("<red>Not wielding a net! Aborting butterfly catching.")
         Falkor.pendingButterflyCatches = 0
+    end
+]])
+
+-- Create trigger: Arrived at Vellis (wait for Vellis to appear)
+Falkor.triggerButterfliesArrived = tempTrigger("You have arrived at your destination!", [[
+    if Falkor.butterfliesStartPending or Falkor.sellButterfliesPending then
+        Falkor:log("<yellow>Arrived at destination. Waiting for Vellis...")
+        -- Don't do anything yet, wait for Vellis to appear
+    end
+]])
+
+-- Create trigger: Vellis appears in room description
+Falkor.triggerVellisPresent = tempTrigger("Vellis, the butterfly collector", [[
+    if Falkor.butterfliesStartPending and Falkor.butterfliesStartStep == 0 then
+        -- Starting sequence: wait for Vellis, then agree
+        Falkor.butterfliesStartStep = 1
+        Falkor:log("<green>Vellis detected! Starting setup sequence...")
+        send("agree")
+    elseif Falkor.sellButterfliesPending and Falkor.sellButterfliesStep == 0 then
+        -- Selling sequence: wait for Vellis, then agree
+        Falkor.sellButterfliesStep = 1
+        Falkor:log("<green>Vellis detected! Starting sell sequence...")
+        send("agree")
+    end
+]])
+
+-- Handle sequence steps after commands (for starting)
+function Falkor:handleButterfliesStep()
+    if not self.butterfliesStartPending then return end
+    
+    if self.butterfliesStartStep == 1 then
+        -- Just agreed, now greet
+        self.butterfliesStartStep = 2
+        Falkor:log("<cyan>Greeting Vellis...")
+        send("greet Vellis")
+    elseif self.butterfliesStartStep == 2 then
+        -- Just greeted, now agree again
+        self.butterfliesStartStep = 3
+        Falkor:log("<cyan>Agreeing again...")
+        send("agree")
+    elseif self.butterfliesStartStep == 3 then
+        -- Just agreed again, now wield net
+        self.butterfliesStartStep = 4
+        Falkor:log("<cyan>Wielding net...")
+        send("wield net")
+    elseif self.butterfliesStartStep == 4 then
+        -- Just wielded net, enable butterfly catching
+        self.butterfliesStartStep = 0
+        self.butterfliesStartPending = false
+        self.catchButterflies = true
+        Falkor:log("<green>Butterfly catching enabled!")
+    end
+end
+
+-- Handle sequence steps after commands (for selling)
+function Falkor:handleSellButterfliesStep()
+    if not self.sellButterfliesPending then return end
+    
+    if self.sellButterfliesStep == 1 then
+        -- Just agreed, now give net
+        self.sellButterfliesStep = 2
+        Falkor:log("<cyan>Giving net to Vellis...")
+        send("give net to Vellis")
+    elseif self.sellButterfliesStep == 2 then
+        -- Just gave net, turn off butterfly catching
+        self.sellButterfliesStep = 0
+        self.sellButterfliesPending = false
+        self.catchButterflies = false
+        Falkor:log("<green>Butterflies sold! Butterfly catching disabled.")
+    end
+end
+
+-- Trigger for "agree" command completion (for starting sequence)
+Falkor.triggerButterfliesAgree = tempTrigger("You agree", [[
+    if Falkor.butterfliesStartPending then
+        Falkor:handleButterfliesStep()
+    end
+]])
+
+-- Trigger for "greet" command completion
+Falkor.triggerButterfliesGreet = tempTrigger("You greet", [[
+    if Falkor.butterfliesStartPending then
+        Falkor:handleButterfliesStep()
+    end
+]])
+
+-- Trigger for "wield" command completion
+Falkor.triggerButterfliesWield = tempTrigger("You are now wielding", [[
+    if Falkor.butterfliesStartPending then
+        Falkor:handleButterfliesStep()
+    end
+]])
+
+-- Trigger for "agree" command completion (for selling sequence)
+Falkor.triggerSellButterfliesAgree = tempTrigger("You agree", [[
+    if Falkor.sellButterfliesPending then
+        Falkor:handleSellButterfliesStep()
+    end
+]])
+
+-- Trigger for "give" command completion
+Falkor.triggerSellButterfliesGive = tempTrigger("You give", [[
+    if Falkor.sellButterfliesPending then
+        Falkor:handleSellButterfliesStep()
     end
 ]])
