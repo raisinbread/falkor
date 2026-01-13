@@ -16,9 +16,9 @@ function Falkor:initPlayer()
     Falkor:log("<yellow>Prompt configured to show target and balance.")
 end
 
--- Execute bash attack against a target
+-- Execute kill attack against a target
 function Falkor:bash(target)
-    send("swing " .. target)
+    send("kill " .. target)
 end
 
 -- Parse the prompt to extract current game state
