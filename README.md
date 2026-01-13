@@ -2,6 +2,14 @@
 
 A Mudlet combat automation script for Achaea, featuring auto-attack, butterfly catching, and rat farming capabilities.
 
+## Prerequisites
+
+Lua is required to build the project. On macOS, install it via Homebrew:
+
+```bash
+brew install lua
+```
+
 ## Project Structure
 
 ```
