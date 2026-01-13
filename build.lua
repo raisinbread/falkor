@@ -1,0 +1,157 @@
+#!/usr/bin/env lua
+-- Build script for Falkor Mudlet package
+-- Generates an XML package from .lua source files in src/
+
+local PACKAGE_NAME = "Falkor"
+local SRC_DIR = "src"
+local BUILD_DIR = "build"
+local OUTPUT_FILE = BUILD_DIR .. "/" .. PACKAGE_NAME .. ".xml"
+
+-- Load order for scripts (dependencies first)
+local LOAD_ORDER = {
+    "log.lua",
+    "player.lua",
+    "butterflies.lua",
+    "rats.lua",
+    "main.lua",
+}
+
+-- Escape XML special characters (only &, <, > need escaping in element content)
+local function escapeXml(str)
+    return str
+        :gsub("&", "&amp;")
+        :gsub("<", "&lt;")
+        :gsub(">", "&gt;")
+end
+
+-- Read file contents
+local function readFile(path)
+    local file = io.open(path, "r")
+    if not file then
+        return nil
+    end
+    local content = file:read("*a")
+    file:close()
+    return content
+end
+
+-- Write file contents
+local function writeFile(path, content)
+    local file = io.open(path, "w")
+    if not file then
+        error("Could not open file for writing: " .. path)
+    end
+    file:write(content)
+    file:close()
+end
+
+-- Check if directory exists
+local function dirExists(path)
+    local ok, err, code = os.rename(path, path)
+    if not ok then
+        if code == 13 then return true end -- Permission denied but exists
+    end
+    return ok
+end
+
+-- Create directory (works on Unix/macOS)
+local function mkdir(path)
+    os.execute("mkdir -p " .. path)
+end
+
+-- List .lua files in directory
+local function listLuaFiles(dir)
+    local files = {}
+    local handle = io.popen('ls "' .. dir .. '"/*.lua 2>/dev/null')
+    if handle then
+        for file in handle:lines() do
+            local name = file:match("([^/]+)$")
+            if name then
+                files[name] = true
+            end
+        end
+        handle:close()
+    end
+    return files
+end
+
+-- Generate XML for a single script
+local function generateScript(name, content)
+    return string.format([[			<Script isActive="yes" isFolder="no">
+				<name>%s</name>
+				<packageName></packageName>
+				<script>%s</script>
+				<eventHandlerList />
+			</Script>]], name, escapeXml(content))
+end
+
+-- Main build function
+local function build()
+    -- Ensure build directory exists
+    if not dirExists(BUILD_DIR) then
+        mkdir(BUILD_DIR)
+    end
+
+    -- Collect scripts in order
+    local scripts = {}
+    local processed = {}
+
+    -- First, process files in explicit load order
+    for _, filename in ipairs(LOAD_ORDER) do
+        local path = SRC_DIR .. "/" .. filename
+        local content = readFile(path)
+        if content then
+            table.insert(scripts, generateScript(filename, content))
+            processed[filename] = true
+            print("  Added: " .. filename)
+        end
+    end
+
+    -- Then, add any remaining .lua files not in load order
+    local allFiles = listLuaFiles(SRC_DIR)
+    local extras = {}
+    for filename in pairs(allFiles) do
+        if not processed[filename] then
+            table.insert(extras, filename)
+        end
+    end
+    table.sort(extras)
+
+    for _, filename in ipairs(extras) do
+        local path = SRC_DIR .. "/" .. filename
+        local content = readFile(path)
+        if content then
+            table.insert(scripts, generateScript(filename, content))
+            print("  Added: " .. filename .. " (extra)")
+        end
+    end
+
+    -- Generate the full XML package
+    local xml = string.format([[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+	<ScriptPackage>
+		<ScriptGroup isActive="yes" isFolder="yes">
+			<name>%s</name>
+			<packageName></packageName>
+			<script></script>
+			<eventHandlerList />
+%s
+		</ScriptGroup>
+	</ScriptPackage>
+</MudletPackage>
+]], PACKAGE_NAME, table.concat(scripts, "\n"))
+
+    -- Write output file
+    writeFile(OUTPUT_FILE, xml)
+
+    print("")
+    print("Build complete!")
+    print("  Output: " .. OUTPUT_FILE)
+    print("  Scripts: " .. #scripts)
+end
+
+-- Run the build
+print("Building " .. PACKAGE_NAME .. " package...")
+print("")
+build()
