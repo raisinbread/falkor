@@ -32,13 +32,13 @@ Falkor:registerAlias("aliasSellRats", "^sellrats$", [[
 Falkor:registerTrigger("triggerArrived", "You have arrived at your destination!", [[
     if Falkor.sellRatsPending then
         Falkor:log("<green>Arrived! Selling rats to Hakhim...")
-        send("sell rats to Hakhim")
+        svo.doadd("sell rats to Hakhim", false, false)
         Falkor.sellRatsPending = false
     end
 ]])
 
 -- Create trigger: Auto-attack rats when they appear
-Falkor:registerTrigger("triggerRatAppears", "(?:Your eyes are drawn to|With a squeak,) (?:a|an) \\w* ?rat|^A \\w* ?rat", [[
+Falkor:registerTrigger("triggerRatAppears", "(?:Your eyes are drawn to|With a squeak,) (?:a|an) \\w* ?rat|^An? \\w* ?rat", [[
     -- Only attack if we're not already attacking and cooldown has passed
     if not Falkor.autoAttack and not Falkor.ratAttackCooldown then
         Falkor.ratAttackCooldown = true

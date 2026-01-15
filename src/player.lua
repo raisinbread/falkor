@@ -9,46 +9,37 @@ function Falkor:initPlayer()
     self.lastTarget = nil    -- Cache for display purposes only
     
     -- Set up the prompt to show what we need
-    -- Format: health, mana, endurance balance [target]-
-    send("config prompt custom *hh, *mm, *ee *b [*t]-")
+    -- Format: health, mana, endurance [target]-
+    send("config prompt custom *hh, *mm, *ee [*t]-")
     
     Falkor:log("<green>Falkor player system initialized.")
-    Falkor:log("<yellow>Prompt configured to show target and balance.")
+    Falkor:log("<yellow>Prompt configured. Using SVOF queue management.")
 end
 
--- Execute kill attack against a target
-function Falkor:bash(target)
-    send("kill " .. target)
+-- Balanceful function for auto-attacking
+-- This gets called by SVOF when balance is available
+function Falkor.autoAttackFunction()
+    -- Only attack if auto-attack is enabled and we have a target
+    if Falkor.autoAttack and Falkor.lastTarget then
+        send("kill " .. Falkor.lastTarget)
+        return true  -- We sent a command that uses balance
+    end
+    return false  -- Don't do anything
 end
 
 -- Parse the prompt to extract current game state
 function Falkor:parsePrompt(line)
-    -- Example prompt: "777h, 500m, 2335e ex [[pygmy]]--"
-    -- Extract balance (x = balance, e = equilibrium)
-    local hasBalance = string.find(line, "x")
-    
+    -- Example prompt: "777h, 500m, 2335e [[pygmy]]--"
     -- Extract target name from [[target]]
     local target = string.match(line, "%[%[(.-)%]%]")
     if target == "" then target = nil end
     
-    return hasBalance, target
+    return target
 end
 
 -- Handle prompt updates
 function Falkor:onPrompt(line)
-    local hasBalance, target = self:parsePrompt(line)
-    
-    -- Priority 1: Catch butterflies if we have pending catches and balance
-    if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 and hasBalance then
-        send("catch butterfly")
-        self.pendingButterflyCatches = self.pendingButterflyCatches - 1
-        return  -- Don't do anything else this prompt
-    end
-    
-    -- Priority 2: Auto-attack logic: if we want to auto-attack AND we have balance AND we have a target
-    if self.autoAttack and hasBalance and target then
-        self:bash(target)
-    end
+    local target = self:parsePrompt(line)
     
     -- Update cached target for display
     if target ~= self.lastTarget then
@@ -59,6 +50,16 @@ function Falkor:onPrompt(line)
             Falkor:log("<yellow>Target cleared.")
         end
     end
+    
+    -- Priority 1: Catch butterflies if we have pending catches
+    -- SVOF will handle balance checking and queuing
+    if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
+        svo.doadd("catch butterfly", false, false)
+        self.pendingButterflyCatches = self.pendingButterflyCatches - 1
+    end
+    
+    -- Note: Auto-attack is now handled by the balanceful queue function
+    -- No need to do anything here - SVOF will call our function when balance is available
 end
 
 -- Start auto-attacking (set target in game, enable auto-attack)
@@ -66,22 +67,39 @@ end
 function Falkor:startAttack(targetName)
     if targetName then
         send("settarget " .. targetName)
+        self.lastTarget = targetName
         Falkor:log("<green>Auto-attack enabled for: " .. targetName)
     else
         Falkor:log("<green>Auto-attack enabled (using current target).")
     end
     self.autoAttack = true
-    -- Don't send initial bash - let the prompt handler do it when we have balance
+    
+    -- Add our attack function to SVOF's balanceful queue
+    svo.addbalanceful("falkor_autoattack", Falkor.autoAttackFunction)
 end
 
 -- Stop auto-attacking
 function Falkor:stopAttack()
     self.autoAttack = false
+    
+    -- Remove our attack function from SVOF's balanceful queue
+    svo.removebalanceful("falkor_autoattack")
+    
     Falkor:log("<red>Auto-attack disabled.")
 end
 
 -- Initialize player module
 Falkor:initPlayer()
+
+-- Register event handler for when SVOF's balanceful queue is ready
+-- This ensures our functions are re-added if the queue is cleared
+function Falkor.onSvoBalancefulReady()
+    if Falkor.autoAttack then
+        svo.addbalanceful("falkor_autoattack", Falkor.autoAttackFunction)
+    end
+end
+
+registerAnonymousEventHandler("svo balanceful ready", "Falkor.onSvoBalancefulReady")
 
 -- ============================================
 -- PLAYER ALIASES AND TRIGGERS
@@ -110,8 +128,8 @@ Falkor:registerAlias("aliasStop", "^stop$", [[
 ]])
 
 -- Create trigger: Prompt line (this fires on EVERY prompt)
--- Match the custom prompt format: "777h, 500m, 2335e ex [[pygmy]]--" or "777h, 500m, 2335e ex []--"
-Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e .* \\[.*\\]--$", [[
+-- Match the custom prompt format: "777h, 500m, 2335e [[pygmy]]--" or "777h, 500m, 2335e []--"
+Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e \\[.*\\]--$", [[
     Falkor:onPrompt(line)
 ]], true)
 
@@ -137,6 +155,6 @@ Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that w
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
     if Falkor.autoAttack then
         Falkor:log("<yellow>Must stand! Standing up...")
-        send("stand")
+        svo.doadd("stand", false, false)
     end
 ]])
