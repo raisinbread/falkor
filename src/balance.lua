@@ -8,6 +8,7 @@ function Falkor:initBalance()
         hasBalance = true,
         hasEquilibrium = true,
         actions = {},  -- FIFO queue of all actions
+        queueProcessed = false,  -- Whether we've processed the queue for current balance state
     }
     
     Falkor:log("<green>Balance tracking system initialized.")
@@ -24,7 +25,7 @@ function Falkor:addAction(action, persistent, name)
         name = name
     })
     
-    -- Try to process the queue immediately
+    -- Try to process the queue - it will check if we have balance and haven't already processed
     self:processQueue()
 end
 
@@ -41,6 +42,12 @@ end
 function Falkor:processQueue()
     -- Only process if we have balance and equilibrium
     if not self.balance.hasBalance or not self.balance.hasEquilibrium then
+        self.balance.queueProcessed = false
+        return
+    end
+    
+    -- Don't process if we've already processed for this balance state
+    if self.balance.queueProcessed then
         return
     end
     
@@ -62,8 +69,7 @@ function Falkor:processQueue()
             end
             
             if used then
-                self.balance.hasBalance = false
-                self.balance.hasEquilibrium = false
+                self.balance.queueProcessed = true
                 return
             end
         end
@@ -77,14 +83,12 @@ function Falkor:processQueue()
             if type(action) == "string" then
                 -- It's a command string
                 send(action)
-                self.balance.hasBalance = false
-                self.balance.hasEquilibrium = false
+                self.balance.queueProcessed = true
             elseif type(action) == "function" then
                 -- It's a function - call it and check if it consumed balance
                 local used = action()
                 if used then
-                    self.balance.hasBalance = false
-                    self.balance.hasEquilibrium = false
+                    self.balance.queueProcessed = true
                 end
             end
             

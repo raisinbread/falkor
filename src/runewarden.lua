@@ -45,7 +45,6 @@ function Falkor.autoCollide()
         -- Schedule cooldown reset
         tempTimer(ability.cooldown, function()
             ability.ready = nil
-            Falkor:log("<cyan>Collide ready!")
         end)
         
         return false  -- Battlerage abilities don't consume balance, allow other actions
@@ -73,7 +72,6 @@ function Falkor.autoBulwark()
         -- Schedule cooldown reset
         tempTimer(ability.cooldown, function()
             ability.ready = nil
-            Falkor:log("<cyan>Bulwark ready!")
         end)
         
         return false  -- Battlerage abilities don't consume balance, allow other actions

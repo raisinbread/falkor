@@ -118,21 +118,14 @@ function Falkor:onPrompt(line)
     -- Parse all player state from prompt
     self:parsePrompt(line)
     
-    -- Update balance system state and process queue if balance changed
+    -- Update balance system state from prompt
     if self.balance then
-        local hadBalance = self.balance.hasBalance
-        local hadEquilibrium = self.balance.hasEquilibrium
-        
         self.balance.hasBalance = self.player.hasBalance
         self.balance.hasEquilibrium = self.player.hasEquilibrium
         
-        -- Only process queue if we GAINED balance or equilibrium
-        local gainedBalance = self.balance.hasBalance and not hadBalance
-        local gainedEquilibrium = self.balance.hasEquilibrium and not hadEquilibrium
-        
-        if gainedBalance or gainedEquilibrium then
-            self:processQueue()
-        end
+        -- Always try to process queue on every prompt
+        -- processQueue() will decide if it should act based on balance and whether it's already processed
+        self:processQueue()
     end
     
     -- Priority 1: Check elixirs (health/mana recovery)
@@ -161,12 +154,6 @@ function Falkor:startAttack(targetName)
     
     -- Add our attack function to the action queue
     self:addAction(Falkor.autoAttackFunction, true, "falkor_autoattack")
-    
-    -- Force the next prompt to trigger processQueue by resetting balance state
-    -- This ensures we attack on the next prompt without duplicate commands
-    if self.balance then
-        self.balance.hasBalance = false
-    end
 end
 
 -- Stop auto-attacking
