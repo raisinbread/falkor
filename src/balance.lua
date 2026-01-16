@@ -25,6 +25,9 @@ function Falkor:addAction(action, persistent, name)
         name = name
     })
     
+    -- Reset queueProcessed so the new action can be processed immediately if balance is available
+    self.balance.queueProcessed = false
+    
     -- Try to process the queue - it will check if we have balance and haven't already processed
     self:processQueue()
 end
@@ -38,7 +41,8 @@ function Falkor:removeAction(name)
     end
 end
 
--- Process actions in FIFO order: persistent first, then non-persistent
+-- Process actions in strict FIFO order (first-in-first-out)
+-- Persistent actions stay in queue after execution, non-persistent are removed
 function Falkor:processQueue()
     -- Only process if we have balance and equilibrium
     if not self.balance.hasBalance or not self.balance.hasEquilibrium then
@@ -51,50 +55,36 @@ function Falkor:processQueue()
         return
     end
     
-    -- Process actions in FIFO order
-    -- Priority: persistent actions first, then non-persistent
+    -- Process actions in strict FIFO order (insertion order)
     for i, entry in ipairs(self.balance.actions) do
-        -- Skip non-persistent actions on first pass
-        if entry.persistent then
-            local action = entry.action
-            local used = false
-            
-            if type(action) == "string" then
-                -- It's a command string
-                send(action)
-                used = true
-            elseif type(action) == "function" then
-                -- It's a function - call it and check if it consumed balance
-                used = action()
-            end
-            
-            if used then
-                self.balance.queueProcessed = true
-                return
-            end
+        local action = entry.action
+        local used = false
+        
+        if type(action) == "string" then
+            -- It's a command string
+            send(action)
+            used = true
+        elseif type(action) == "function" then
+            -- It's a function - call it and check if it consumed balance
+            used = action()
         end
-    end
-    
-    -- Second pass: process non-persistent actions in FIFO order
-    for i, entry in ipairs(self.balance.actions) do
-        if not entry.persistent then
-            local action = entry.action
+        
+        if used then
+            -- Mark queue as processed for this balance state
+            self.balance.queueProcessed = true
             
-            if type(action) == "string" then
-                -- It's a command string
-                send(action)
-                self.balance.queueProcessed = true
-            elseif type(action) == "function" then
-                -- It's a function - call it and check if it consumed balance
-                local used = action()
-                if used then
-                    self.balance.queueProcessed = true
-                end
+            -- Remove non-persistent actions after execution
+            if not entry.persistent then
+                table.remove(self.balance.actions, i)
             end
             
-            -- Remove non-persistent action after execution
-            table.remove(self.balance.actions, i)
             return
+        end
+        
+        -- If action didn't use balance (function returned false), continue to next action
+        -- But still remove non-persistent actions that were processed
+        if not entry.persistent then
+            table.remove(self.balance.actions, i)
         end
     end
 end
