@@ -63,31 +63,46 @@ function Falkor:processQueue()
         return
     end
     
-    -- If no queued commands, try balanceful functions
-    for name, func in pairs(self.balance.balancefulFunctions) do
-        local used = func()
-        if used then
-            self.balance.hasBalance = false
-            self.balance.hasEquilibrium = false
-            return
+    -- If no queued commands, try balanceful functions in priority order
+    -- Priority order: battlerage abilities first, then auto-attack
+    local functionOrder = {
+        "falkor_collide",
+        "falkor_bulwark", 
+        "falkor_autoattack"
+    }
+    
+    local balanceConsumed = false
+    for _, name in ipairs(functionOrder) do
+        local func = self.balance.balancefulFunctions[name]
+        if func then
+            local used = func()
+            if used then
+                -- This function consumed balance (e.g., auto-attack)
+                balanceConsumed = true
+                break
+            end
+            -- If battlerage ability fired (returns false but sent a command),
+            -- continue to next function (auto-attack)
         end
     end
+    
+    -- Mark balance as used to prevent duplicate processQueue calls
+    if balanceConsumed then
+        self.balance.hasBalance = false
+        self.balance.hasEquilibrium = false
+    end
 end
 
--- Set balance state
+-- Set balance state (kept for backward compatibility, but not used)
+-- Balance state is now managed by the prompt parser in player.lua
 function Falkor:setBalance(hasBalance)
-    self.balance.hasBalance = hasBalance
-    if hasBalance then
-        self:processQueue()
-    end
+    -- No-op: balance state is managed by prompt parser
 end
 
--- Set equilibrium state
+-- Set equilibrium state (kept for backward compatibility, but not used)
+-- Equilibrium state is now managed by the prompt parser in player.lua
 function Falkor:setEquilibrium(hasEquilibrium)
-    self.balance.hasEquilibrium = hasEquilibrium
-    if hasEquilibrium then
-        self:processQueue()
-    end
+    -- No-op: equilibrium state is managed by prompt parser
 end
 
 -- Initialize balance module
@@ -98,8 +113,11 @@ Falkor:initBalance()
 -- ============================================
 
 -- Trigger: Balance regained
+-- Note: We don't call setBalance here because the prompt will handle it
+-- This trigger is kept for informational purposes only
 Falkor:registerTrigger("triggerBalanceGained", "You have recovered balance", [[
-    Falkor:setBalance(true)
+    -- Balance state will be updated by the prompt parser
+    -- Don't call setBalance here to avoid duplicate command sends
 ]])
 
 -- Trigger: Balance lost (various messages)

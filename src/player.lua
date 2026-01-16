@@ -118,13 +118,19 @@ function Falkor:onPrompt(line)
     -- Parse all player state from prompt
     self:parsePrompt(line)
     
-    -- Update balance system state
+    -- Update balance system state and process queue if balance changed
     if self.balance then
+        local hadBalance = self.balance.hasBalance
+        local hadEquilibrium = self.balance.hasEquilibrium
+        
         self.balance.hasBalance = self.player.hasBalance
         self.balance.hasEquilibrium = self.player.hasEquilibrium
         
-        -- Process queue when we have balance/eq
-        if self.balance.hasBalance or self.balance.hasEquilibrium then
+        -- Only process queue if we GAINED balance or equilibrium
+        local gainedBalance = self.balance.hasBalance and not hadBalance
+        local gainedEquilibrium = self.balance.hasEquilibrium and not hadEquilibrium
+        
+        if gainedBalance or gainedEquilibrium then
             self:processQueue()
         end
     end
@@ -155,6 +161,12 @@ function Falkor:startAttack(targetName)
     
     -- Add our attack function to the balanceful queue
     self:addBalanceful("falkor_autoattack", Falkor.autoAttackFunction)
+    
+    -- Force the next prompt to trigger processQueue by resetting balance state
+    -- This ensures we attack on the next prompt without duplicate commands
+    if self.balance then
+        self.balance.hasBalance = false
+    end
 end
 
 -- Stop auto-attacking

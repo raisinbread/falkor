@@ -30,8 +30,9 @@ end
 function Falkor.autoCollide()
     local ability = Falkor.battlerageAbilities.collide
     
-    -- Only use if enabled, we have a target, enough rage, and it's off cooldown
+    -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
     if ability.enabled and 
+       Falkor.player.autoAttack and
        Falkor.player.target and 
        Falkor.player.rage >= ability.rageCost and
        not ability.ready then
@@ -47,7 +48,7 @@ function Falkor.autoCollide()
             Falkor:log("<cyan>Collide ready!")
         end)
         
-        return true  -- We sent a command that uses balance
+        return false  -- Battlerage abilities don't consume balance, allow other actions
     end
     return false  -- Don't do anything
 end
@@ -57,8 +58,10 @@ end
 function Falkor.autoBulwark()
     local ability = Falkor.battlerageAbilities.bulwark
     
-    -- Only use if enabled, enough rage, and it's off cooldown
+    -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
     if ability.enabled and 
+       Falkor.player.autoAttack and
+       Falkor.player.target and 
        Falkor.player.rage >= ability.rageCost and
        not ability.ready then
         
@@ -73,7 +76,7 @@ function Falkor.autoBulwark()
             Falkor:log("<cyan>Bulwark ready!")
         end)
         
-        return true  -- We sent a command that uses balance
+        return false  -- Battlerage abilities don't consume balance, allow other actions
     end
     return false  -- Don't do anything
 end
