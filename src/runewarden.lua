@@ -111,7 +111,7 @@ function Falkor:manualCollide(target)
         return
     end
     
-    self:queueCommand("collide " .. target)
+    self:addAction("collide " .. target)
 end
 
 -- Manual bulwark command
@@ -129,7 +129,7 @@ function Falkor:manualBulwark()
         return
     end
     
-    self:queueCommand("bulwark")
+    self:addAction("bulwark")
 end
 
 -- Initialize runewarden module
@@ -137,10 +137,10 @@ Falkor:initRunewarden()
 
 -- Register battlerage abilities with the balance system
 if Falkor.battlerageAbilities.collide.enabled then
-    Falkor:addBalanceful("falkor_collide", Falkor.autoCollide)
+    Falkor:addAction(Falkor.autoCollide, true, "falkor_collide")
 end
 if Falkor.battlerageAbilities.bulwark.enabled then
-    Falkor:addBalanceful("falkor_bulwark", Falkor.autoBulwark)
+    Falkor:addAction(Falkor.autoBulwark, true, "falkor_bulwark")
 end
 
 -- ============================================

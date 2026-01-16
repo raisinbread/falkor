@@ -7,89 +7,91 @@ function Falkor:initBalance()
     self.balance = {
         hasBalance = true,
         hasEquilibrium = true,
-        commandQueue = {},  -- Queue of commands waiting for balance
-        balancefulFunctions = {},  -- Functions to call when balance is available
+        actions = {},  -- FIFO queue of all actions
     }
     
     Falkor:log("<green>Balance tracking system initialized.")
 end
 
--- Add a command to the queue (replacement for svo.doadd)
--- command: the command string to send
--- priority: optional priority (higher = sooner, default 5)
-function Falkor:queueCommand(command, priority)
-    priority = priority or 5
-    
-    table.insert(self.balance.commandQueue, {
-        command = command,
-        priority = priority
+-- Add an action to the queue
+-- action: either a command string to send, or a function to call
+-- persistent: if true, action stays in queue and runs repeatedly when balance available
+-- name: optional name for persistent actions (used for removal)
+function Falkor:addAction(action, persistent, name)
+    table.insert(self.balance.actions, {
+        action = action,
+        persistent = persistent or false,
+        name = name
     })
-    
-    -- Sort queue by priority (higher first)
-    table.sort(self.balance.commandQueue, function(a, b)
-        return a.priority > b.priority
-    end)
     
     -- Try to process the queue immediately
     self:processQueue()
 end
 
--- Add a balanceful function (replacement for svo.addbalanceful)
--- name: unique identifier for the function
--- func: function to call when balance is available (should return true if it used balance)
-function Falkor:addBalanceful(name, func)
-    self.balance.balancefulFunctions[name] = func
+-- Remove an action by name
+function Falkor:removeAction(name)
+    for i = #self.balance.actions, 1, -1 do
+        if self.balance.actions[i].name == name then
+            table.remove(self.balance.actions, i)
+        end
+    end
 end
 
--- Remove a balanceful function (replacement for svo.removebalanceful)
--- name: unique identifier for the function
-function Falkor:removeBalanceful(name)
-    self.balance.balancefulFunctions[name] = nil
-end
-
--- Process the command queue and balanceful functions
+-- Process actions in FIFO order: persistent first, then non-persistent
 function Falkor:processQueue()
     -- Only process if we have balance and equilibrium
     if not self.balance.hasBalance or not self.balance.hasEquilibrium then
         return
     end
     
-    -- First, try to execute queued commands
-    if #self.balance.commandQueue > 0 then
-        local cmd = table.remove(self.balance.commandQueue, 1)
-        send(cmd.command)
-        self.balance.hasBalance = false
-        self.balance.hasEquilibrium = false
-        return
-    end
-    
-    -- If no queued commands, try balanceful functions in priority order
-    -- Priority order: battlerage abilities first, then auto-attack
-    local functionOrder = {
-        "falkor_collide",
-        "falkor_bulwark", 
-        "falkor_autoattack"
-    }
-    
-    local balanceConsumed = false
-    for _, name in ipairs(functionOrder) do
-        local func = self.balance.balancefulFunctions[name]
-        if func then
-            local used = func()
-            if used then
-                -- This function consumed balance (e.g., auto-attack)
-                balanceConsumed = true
-                break
+    -- Process actions in FIFO order
+    -- Priority: persistent actions first, then non-persistent
+    for i, entry in ipairs(self.balance.actions) do
+        -- Skip non-persistent actions on first pass
+        if entry.persistent then
+            local action = entry.action
+            local used = false
+            
+            if type(action) == "string" then
+                -- It's a command string
+                send(action)
+                used = true
+            elseif type(action) == "function" then
+                -- It's a function - call it and check if it consumed balance
+                used = action()
             end
-            -- If battlerage ability fired (returns false but sent a command),
-            -- continue to next function (auto-attack)
+            
+            if used then
+                self.balance.hasBalance = false
+                self.balance.hasEquilibrium = false
+                return
+            end
         end
     end
     
-    -- Mark balance as used to prevent duplicate processQueue calls
-    if balanceConsumed then
-        self.balance.hasBalance = false
-        self.balance.hasEquilibrium = false
+    -- Second pass: process non-persistent actions in FIFO order
+    for i, entry in ipairs(self.balance.actions) do
+        if not entry.persistent then
+            local action = entry.action
+            
+            if type(action) == "string" then
+                -- It's a command string
+                send(action)
+                self.balance.hasBalance = false
+                self.balance.hasEquilibrium = false
+            elseif type(action) == "function" then
+                -- It's a function - call it and check if it consumed balance
+                local used = action()
+                if used then
+                    self.balance.hasBalance = false
+                    self.balance.hasEquilibrium = false
+                end
+            end
+            
+            -- Remove non-persistent action after execution
+            table.remove(self.balance.actions, i)
+            return
+        end
     end
 end
 

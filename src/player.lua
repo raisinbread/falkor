@@ -142,7 +142,7 @@ function Falkor:onPrompt(line)
     
     -- Priority 2: Catch butterflies if we have pending catches
     if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
-        self:queueCommand("catch butterfly", 10)  -- High priority
+        self:addAction("catch butterfly")
         self.pendingButterflyCatches = self.pendingButterflyCatches - 1
     end
 end
@@ -159,8 +159,8 @@ function Falkor:startAttack(targetName)
     end
     self.player.autoAttack = true
     
-    -- Add our attack function to the balanceful queue
-    self:addBalanceful("falkor_autoattack", Falkor.autoAttackFunction)
+    -- Add our attack function to the action queue
+    self:addAction(Falkor.autoAttackFunction, true, "falkor_autoattack")
     
     -- Force the next prompt to trigger processQueue by resetting balance state
     -- This ensures we attack on the next prompt without duplicate commands
@@ -173,8 +173,8 @@ end
 function Falkor:stopAttack()
     self.player.autoAttack = false
     
-    -- Remove our attack function from the balanceful queue
-    self:removeBalanceful("falkor_autoattack")
+    -- Remove our attack function from the action queue
+    self:removeAction("falkor_autoattack")
     
     Falkor:log("<red>Auto-attack disabled.")
 end
@@ -237,7 +237,7 @@ Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that w
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
     if Falkor.player.autoAttack then
         Falkor:log("<yellow>Must stand! Standing up...")
-        Falkor:queueCommand("stand", 10)  -- High priority
+        Falkor:addAction("stand")
     end
 ]])
 

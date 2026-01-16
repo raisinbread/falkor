@@ -25,7 +25,7 @@ function Falkor:checkHealthElixir()
     
     -- Check if we need to drink
     if healthPct < self.elixirs.healthThreshold then
-        self:queueCommand("drink health", 8)  -- High priority (higher than normal combat)
+        self:addAction("drink health")
         return true
     end
     
@@ -43,7 +43,7 @@ function Falkor:checkManaElixir()
     
     -- Check if we need to drink
     if manaPct < self.elixirs.manaThreshold then
-        self:queueCommand("drink mana", 7)  -- High priority but slightly lower than health
+        self:addAction("drink mana")
         return true
     end
     

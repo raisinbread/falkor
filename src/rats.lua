@@ -32,7 +32,7 @@ Falkor:registerAlias("aliasSellRats", "^sellrats$", [[
 Falkor:registerTrigger("triggerArrived", "You have arrived at your destination!", [[
     if Falkor.sellRatsPending then
         Falkor:log("<green>Arrived! Selling rats to Hakhim...")
-        Falkor:queueCommand("sell rats to Hakhim")
+        Falkor:addAction("sell rats to Hakhim")
         Falkor.sellRatsPending = false
     end
 ]])

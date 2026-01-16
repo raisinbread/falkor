@@ -102,12 +102,12 @@ Falkor:registerTrigger("triggerVellisPresent", "Vellis, the butterfly collector"
         -- Starting sequence: wait for Vellis, then agree
         Falkor.butterfliesStartStep = 1
         Falkor:log("<green>Vellis detected! Starting setup sequence...")
-        Falkor:queueCommand("agree")
+        Falkor:addAction("agree")
     elseif Falkor.sellButterfliesPending and Falkor.sellButterfliesStep == 0 then
         -- Selling sequence: wait for Vellis, then agree
         Falkor.sellButterfliesStep = 1
         Falkor:log("<green>Vellis detected! Starting sell sequence...")
-        Falkor:queueCommand("agree")
+        Falkor:addAction("agree")
     end
 ]])
 
@@ -119,17 +119,17 @@ function Falkor:handleButterfliesStep()
         -- Just agreed, now greet
         self.butterfliesStartStep = 2
         Falkor:log("<cyan>Greeting Vellis...")
-        self:queueCommand("greet Vellis")
+        self:addAction("greet Vellis")
     elseif self.butterfliesStartStep == 2 then
         -- Just greeted, now agree again
         self.butterfliesStartStep = 3
         Falkor:log("<cyan>Agreeing again...")
-        self:queueCommand("agree")
+        self:addAction("agree")
     elseif self.butterfliesStartStep == 3 then
         -- Just agreed again, now wield net
         self.butterfliesStartStep = 4
         Falkor:log("<cyan>Wielding net...")
-        self:queueCommand("wield net")
+        self:addAction("wield net")
     elseif self.butterfliesStartStep == 4 then
         -- Just wielded net, enable butterfly catching
         self.butterfliesStartStep = 0
@@ -147,7 +147,7 @@ function Falkor:handleSellButterfliesStep()
         -- Just agreed, now give net
         self.sellButterfliesStep = 2
         Falkor:log("<cyan>Giving net to Vellis...")
-        self:queueCommand("give net to Vellis")
+        self:addAction("give net to Vellis")
     elseif self.sellButterfliesStep == 2 then
         -- Just gave net, turn off butterfly catching
         self.sellButterfliesStep = 0
