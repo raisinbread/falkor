@@ -25,11 +25,10 @@ function Falkor:addAction(action, persistent, name)
         name = name
     })
     
-    -- Reset queueProcessed so the new action can be processed immediately if balance is available
+    -- Reset queueProcessed so the new action can be processed on the next prompt
+    -- Don't call processQueue() here because balance state may be stale
+    -- The queue will be processed on the next prompt when balance state is fresh
     self.balance.queueProcessed = false
-    
-    -- Try to process the queue - it will check if we have balance and haven't already processed
-    self:processQueue()
 end
 
 -- Remove an action by name

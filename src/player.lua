@@ -128,12 +128,12 @@ function Falkor:onPrompt(line)
         self:processQueue()
     end
     
-    -- Priority 1: Check elixirs (health/mana recovery)
+    -- Check elixirs (health/mana recovery) - runs independently of balance queue
     if self.elixirs then
         self:checkElixirs()
     end
     
-    -- Priority 2: Catch butterflies if we have pending catches
+    -- Catch butterflies if we have pending catches
     if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
         self:addAction("catch butterfly")
         self.pendingButterflyCatches = self.pendingButterflyCatches - 1
@@ -222,10 +222,18 @@ Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that w
 
 -- Create trigger: Must stand first (auto-stand)
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
-    if Falkor.player.autoAttack then
-        Falkor:log("<yellow>Must stand! Standing up...")
-        Falkor:addAction("stand")
-    end
+    Falkor:log("<yellow>Must stand! Standing up...")
+    Falkor:addAction("stand")
+]])
+
+-- Create trigger: Gold from corpse (auto-pickup)
+Falkor:registerTrigger("triggerGoldFromCorpse", "sovereigns spills from the corpse", [[
+    Falkor:addAction("get gold")
+]])
+
+-- Create trigger: Gold in room (auto-pickup)
+Falkor:registerTrigger("triggerGoldInRoom", "a small pile of golden sovereigns", [[
+    Falkor:addAction("get gold")
 ]])
 
 -- Create alias: fplayer (display player status)
