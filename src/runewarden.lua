@@ -84,54 +84,6 @@ function Falkor:parseRage(line)
     -- Rage is now parsed in Falkor.player.rage by parsePrompt()
 end
 
--- Enable auto-collide
-function Falkor:enableCollide()
-    local ability = self.battlerageAbilities.collide
-    ability.enabled = true
-    self:addBalanceful("falkor_collide", Falkor.autoCollide)
-    Falkor:log("<green>Auto-Collide enabled (requires " .. ability.rageCost .. " rage, " .. ability.cooldown .. "s cooldown)")
-end
-
--- Disable auto-collide
-function Falkor:disableCollide()
-    self.battlerageAbilities.collide.enabled = false
-    self:removeBalanceful("falkor_collide")
-    Falkor:log("<red>Auto-Collide disabled")
-end
-
--- Toggle auto-collide
-function Falkor:toggleCollide()
-    if self.battlerageAbilities.collide.enabled then
-        self:disableCollide()
-    else
-        self:enableCollide()
-    end
-end
-
--- Enable auto-bulwark
-function Falkor:enableBulwark()
-    local ability = self.battlerageAbilities.bulwark
-    ability.enabled = true
-    self:addBalanceful("falkor_bulwark", Falkor.autoBulwark)
-    Falkor:log("<green>Auto-Bulwark enabled (requires " .. ability.rageCost .. " rage, " .. ability.cooldown .. "s cooldown)")
-end
-
--- Disable auto-bulwark
-function Falkor:disableBulwark()
-    self.battlerageAbilities.bulwark.enabled = false
-    self:removeBalanceful("falkor_bulwark")
-    Falkor:log("<red>Auto-Bulwark disabled")
-end
-
--- Toggle auto-bulwark
-function Falkor:toggleBulwark()
-    if self.battlerageAbilities.bulwark.enabled then
-        self:disableBulwark()
-    else
-        self:enableBulwark()
-    end
-end
-
 -- Manual collide command
 function Falkor:manualCollide(target)
     local ability = self.battlerageAbilities.collide
@@ -206,26 +158,14 @@ Falkor:registerAlias("aliasBulwark", "^bulwark$", [[
     Falkor:manualBulwark()
 ]])
 
--- Create alias: autocollide (toggle auto-collide)
-Falkor:registerAlias("aliasAutoCollide", "^autocollide$", [[
-    Falkor:toggleCollide()
-]])
-
--- Create alias: autobulwark (toggle auto-bulwark)
-Falkor:registerAlias("aliasAutoBulwark", "^autobulwark$", [[
-    Falkor:toggleBulwark()
-]])
-
 -- Create alias: rage (show current rage status)
 Falkor:registerAlias("aliasRageStatus", "^rage$", [[
     local collide = Falkor.battlerageAbilities.collide
     local bulwark = Falkor.battlerageAbilities.bulwark
     
     Falkor:log("<cyan>Current Rage: " .. Falkor.player.rage .. "/" .. Falkor.player.maxRage)
-    Falkor:log("<cyan>Auto-Collide: " .. (collide.enabled and "ON" or "OFF") .. 
-               " (Cost: " .. collide.rageCost .. " rage, CD: " .. collide.cooldown .. "s)")
-    Falkor:log("<cyan>Auto-Bulwark: " .. (bulwark.enabled and "ON" or "OFF") .. 
-               " (Cost: " .. bulwark.rageCost .. " rage, CD: " .. bulwark.cooldown .. "s)")
+    Falkor:log("<cyan>Collide: Cost " .. collide.rageCost .. " rage, CD " .. collide.cooldown .. "s")
+    Falkor:log("<cyan>Bulwark: Cost " .. bulwark.rageCost .. " rage, CD " .. bulwark.cooldown .. "s")
     
     if collide.ready then
         local remaining = collide.ready - os.time()

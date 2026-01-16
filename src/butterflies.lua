@@ -4,22 +4,12 @@ Falkor = Falkor or {}
 
 -- Initialize butterfly state
 function Falkor:initButterflies()
-    self.catchButterflies = false  -- Flag for butterfly catching
+    self.catchButterflies = true  -- Enabled by default (edit to false to disable)
     self.pendingButterflyCatches = 0  -- Number of butterfly catches queued
     self.butterfliesStartPending = false  -- Flag for when we're starting butterfly catching
     self.butterfliesStartStep = 0  -- Current step in the startup sequence
     self.sellButterfliesPending = false  -- Flag for when we're selling butterflies
     self.sellButterfliesStep = 0  -- Current step in the sell sequence
-end
-
--- Toggle butterfly catching
-function Falkor:toggleButterflies()
-    self.catchButterflies = not self.catchButterflies
-    if self.catchButterflies then
-        Falkor:log("<green>Butterfly catching enabled.")
-    else
-        Falkor:log("<red>Butterfly catching disabled.")
-    end
 end
 
 -- Start butterfly catching setup (walk to Vellis and do the sequence)
@@ -44,11 +34,6 @@ Falkor:initButterflies()
 -- ============================================
 -- BUTTERFLY ALIASES AND TRIGGERS
 -- ============================================
-
--- Create alias: butterflies (toggle butterfly catching)
-Falkor:registerAlias("aliasButterfly", "^butterflies$", [[
-    Falkor:toggleButterflies()
-]])
 
 -- Create alias: butterflies-start (walk to Vellis and set up butterfly catching)
 Falkor:registerAlias("aliasButterfliesStart", "^butterflies-start$", [[

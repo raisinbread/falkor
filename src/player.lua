@@ -129,7 +129,12 @@ function Falkor:onPrompt(line)
         end
     end
     
-    -- Priority 1: Catch butterflies if we have pending catches
+    -- Priority 1: Check elixirs (health/mana recovery)
+    if self.elixirs then
+        self:checkElixirs()
+    end
+    
+    -- Priority 2: Catch butterflies if we have pending catches
     if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
         self:queueCommand("catch butterfly", 10)  -- High priority
         self.pendingButterflyCatches = self.pendingButterflyCatches - 1
