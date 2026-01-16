@@ -8,12 +8,11 @@ function Falkor:initPlayer()
     self.autoAttack = false  -- Only flag we need: do we want to auto-attack?
     self.lastTarget = nil    -- Cache for display purposes only
     
-    -- Set up the prompt to show what we need
-    -- Format: health, mana, endurance [target]-
-    send("config prompt custom *hh, *mm, *ee [*t]-")
+    -- Note: SVOF manages the prompt, so we don't configure it here
+    -- SVOF's prompt includes battlerage tracking automatically
     
     Falkor:log("<green>Falkor player system initialized.")
-    Falkor:log("<yellow>Prompt configured. Using SVOF queue management.")
+    Falkor:log("<yellow>Using SVOF queue management and prompt.")
 end
 
 -- Balanceful function for auto-attacking
@@ -29,10 +28,12 @@ end
 
 -- Parse the prompt to extract current game state
 function Falkor:parsePrompt(line)
-    -- Example prompt: "777h, 500m, 2335e [[pygmy]]--"
-    -- Extract target name from [[target]]
-    local target = string.match(line, "%[%[(.-)%]%]")
-    if target == "" then target = nil end
+    -- SVOF tracks target via gmcp.Char.Combat.Target
+    -- Use SVOF's target tracking
+    local target = nil
+    if gmcp and gmcp.Char and gmcp.Char.Combat and gmcp.Char.Combat.Target then
+        target = gmcp.Char.Combat.Target
+    end
     
     return target
 end
@@ -40,6 +41,11 @@ end
 -- Handle prompt updates
 function Falkor:onPrompt(line)
     local target = self:parsePrompt(line)
+    
+    -- Parse rage from prompt (for runewarden battlerage abilities)
+    if self.parseRage then
+        self:parseRage(line)
+    end
     
     -- Update cached target for display
     if target ~= self.lastTarget then
@@ -128,8 +134,9 @@ Falkor:registerAlias("aliasStop", "^stop$", [[
 ]])
 
 -- Create trigger: Prompt line (this fires on EVERY prompt)
--- Match the custom prompt format: "777h, 500m, 2335e [[pygmy]]--" or "777h, 500m, 2335e []--"
-Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e \\[.*\\]--$", [[
+-- Match SVOF's prompt format: "1539h, 1150m, 5491e, 4600w ex-" or with battlerage "ex 14r-"
+-- SVOF manages the prompt format
+Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e, \\d+w .+-$", [[
     Falkor:onPrompt(line)
 ]], true)
 

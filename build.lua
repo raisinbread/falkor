@@ -12,6 +12,7 @@ local LOAD_ORDER = {
     "log.lua",
     "main.lua",  -- Load early to provide utility functions
     "player.lua",
+    "runewarden.lua",
     "butterflies.lua",
     "rats.lua",
 }
