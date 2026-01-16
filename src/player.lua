@@ -5,22 +5,49 @@ Falkor = Falkor or {}
 
 -- Initialize player state
 function Falkor:initPlayer()
-    self.autoAttack = false  -- Only flag we need: do we want to auto-attack?
-    self.lastTarget = nil    -- Cache for display purposes only
+    -- Consolidated player state object
+    self.player = {
+        -- Vitals
+        health = 0,
+        maxHealth = 0,
+        mana = 0,
+        maxMana = 0,
+        endurance = 0,
+        maxEndurance = 0,
+        willpower = 0,
+        maxWillpower = 0,
+        rage = 0,
+        maxRage = 100,
+        
+        -- Balance states
+        hasBalance = true,
+        hasEquilibrium = true,
+        
+        -- Combat state
+        autoAttack = false,
+        target = nil,
+        
+        -- Location
+        location = nil,
+        area = nil,
+    }
     
-    -- Note: SVOF manages the prompt, so we don't configure it here
-    -- SVOF's prompt includes battlerage tracking automatically
+    -- Configure the game prompt to include the information we need
+    -- Format: health, mana, endurance, willpower, balance/eq indicators, rage
+    -- *h = health, *m = mana, *e = endurance, *w = willpower
+    -- *b = balance/eq indicators, *R = rage
+    send("config prompt custom *hh, *mm, *ee, *ww *b*R-")
     
     Falkor:log("<green>Falkor player system initialized.")
-    Falkor:log("<yellow>Using SVOF queue management and prompt.")
+    Falkor:log("<yellow>Prompt configured: health, mana, endurance, willpower, balance/eq, rage")
 end
 
 -- Balanceful function for auto-attacking
--- This gets called by SVOF when balance is available
+-- This gets called when balance is available
 function Falkor.autoAttackFunction()
     -- Only attack if auto-attack is enabled and we have a target
-    if Falkor.autoAttack and Falkor.lastTarget then
-        send("kill " .. Falkor.lastTarget)
+    if Falkor.player.autoAttack and Falkor.player.target then
+        send("kill " .. Falkor.player.target)
         return true  -- We sent a command that uses balance
     end
     return false  -- Don't do anything
@@ -28,44 +55,85 @@ end
 
 -- Parse the prompt to extract current game state
 function Falkor:parsePrompt(line)
-    -- SVOF tracks target via gmcp.Char.Combat.Target
-    -- Use SVOF's target tracking
-    local target = nil
-    if gmcp and gmcp.Char and gmcp.Char.Combat and gmcp.Char.Combat.Target then
-        target = gmcp.Char.Combat.Target
+    -- Parse vitals from prompt: "3000h, 3000m, 15000e, 15000w ex 14r-"
+    local health, mana, endurance, willpower = string.match(line, "^(%d+)h, (%d+)m, (%d+)e, (%d+)w")
+    
+    if health then
+        self.player.health = tonumber(health)
+        self.player.mana = tonumber(mana)
+        self.player.endurance = tonumber(endurance)
+        self.player.willpower = tonumber(willpower)
     end
     
-    return target
+    -- Parse balance/equilibrium state and rage
+    -- Format can be: "ex-" or "ex0-" or "ex 14r-" or "ex14r-"
+    local balanceStr, rageStr = string.match(line, "(%a+)%s?(%d*)r?%-")
+    if balanceStr then
+        self.player.hasBalance = string.find(balanceStr, "x") ~= nil
+        self.player.hasEquilibrium = string.find(balanceStr, "e") ~= nil
+    end
+    
+    -- Parse rage (can be "ex0-" or "ex 14r-" or "ex14r-")
+    if rageStr and rageStr ~= "" then
+        self.player.rage = tonumber(rageStr)
+    else
+        -- If no rage number shown, it's 0
+        self.player.rage = 0
+    end
+    
+    -- Track target via GMCP
+    if gmcp and gmcp.Char and gmcp.Char.Combat and gmcp.Char.Combat.Target then
+        self.player.target = gmcp.Char.Combat.Target
+    end
+    
+    -- Track location via GMCP
+    if gmcp and gmcp.Room and gmcp.Room.Info then
+        if gmcp.Room.Info.name then
+            self.player.location = gmcp.Room.Info.name
+        end
+        if gmcp.Room.Info.area then
+            self.player.area = gmcp.Room.Info.area
+        end
+    end
+    
+    -- Get max values from GMCP if available
+    if gmcp and gmcp.Char and gmcp.Char.Vitals then
+        if gmcp.Char.Vitals.maxhp then
+            self.player.maxHealth = tonumber(gmcp.Char.Vitals.maxhp)
+        end
+        if gmcp.Char.Vitals.maxmp then
+            self.player.maxMana = tonumber(gmcp.Char.Vitals.maxmp)
+        end
+        if gmcp.Char.Vitals.maxep then
+            self.player.maxEndurance = tonumber(gmcp.Char.Vitals.maxep)
+        end
+        if gmcp.Char.Vitals.maxwp then
+            self.player.maxWillpower = tonumber(gmcp.Char.Vitals.maxwp)
+        end
+    end
 end
 
 -- Handle prompt updates
 function Falkor:onPrompt(line)
-    local target = self:parsePrompt(line)
+    -- Parse all player state from prompt
+    self:parsePrompt(line)
     
-    -- Parse rage from prompt (for runewarden battlerage abilities)
-    if self.parseRage then
-        self:parseRage(line)
-    end
-    
-    -- Update cached target for display
-    if target ~= self.lastTarget then
-        self.lastTarget = target
-        if target then
-            Falkor:log("<cyan>Target detected: " .. target)
-        else
-            Falkor:log("<yellow>Target cleared.")
+    -- Update balance system state
+    if self.balance then
+        self.balance.hasBalance = self.player.hasBalance
+        self.balance.hasEquilibrium = self.player.hasEquilibrium
+        
+        -- Process queue when we have balance/eq
+        if self.balance.hasBalance or self.balance.hasEquilibrium then
+            self:processQueue()
         end
     end
     
     -- Priority 1: Catch butterflies if we have pending catches
-    -- SVOF will handle balance checking and queuing
     if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
-        svo.doadd("catch butterfly", false, false)
+        self:queueCommand("catch butterfly", 10)  -- High priority
         self.pendingButterflyCatches = self.pendingButterflyCatches - 1
     end
-    
-    -- Note: Auto-attack is now handled by the balanceful queue function
-    -- No need to do anything here - SVOF will call our function when balance is available
 end
 
 -- Start auto-attacking (set target in game, enable auto-attack)
@@ -73,39 +141,29 @@ end
 function Falkor:startAttack(targetName)
     if targetName then
         send("settarget " .. targetName)
-        self.lastTarget = targetName
+        self.player.target = targetName
         Falkor:log("<green>Auto-attack enabled for: " .. targetName)
     else
         Falkor:log("<green>Auto-attack enabled (using current target).")
     end
-    self.autoAttack = true
+    self.player.autoAttack = true
     
-    -- Add our attack function to SVOF's balanceful queue
-    svo.addbalanceful("falkor_autoattack", Falkor.autoAttackFunction)
+    -- Add our attack function to the balanceful queue
+    self:addBalanceful("falkor_autoattack", Falkor.autoAttackFunction)
 end
 
 -- Stop auto-attacking
 function Falkor:stopAttack()
-    self.autoAttack = false
+    self.player.autoAttack = false
     
-    -- Remove our attack function from SVOF's balanceful queue
-    svo.removebalanceful("falkor_autoattack")
+    -- Remove our attack function from the balanceful queue
+    self:removeBalanceful("falkor_autoattack")
     
     Falkor:log("<red>Auto-attack disabled.")
 end
 
 -- Initialize player module
 Falkor:initPlayer()
-
--- Register event handler for when SVOF's balanceful queue is ready
--- This ensures our functions are re-added if the queue is cleared
-function Falkor.onSvoBalancefulReady()
-    if Falkor.autoAttack then
-        svo.addbalanceful("falkor_autoattack", Falkor.autoAttackFunction)
-    end
-end
-
-registerAnonymousEventHandler("svo balanceful ready", "Falkor.onSvoBalancefulReady")
 
 -- ============================================
 -- PLAYER ALIASES AND TRIGGERS
@@ -118,8 +176,8 @@ Falkor:registerAlias("aliasAttack", "^att( .+)?$", [[
         -- Remove leading space
         target = string.gsub(target, "^ ", "")
     else
-        -- No target provided, try to use the last target from prompt
-        target = Falkor.lastTarget
+        -- No target provided, try to use the current target
+        target = Falkor.player.target
         if not target then
             Falkor:log("<yellow>No target specified and no current target found. Use 'att <target>' to set a target.")
             return
@@ -134,9 +192,9 @@ Falkor:registerAlias("aliasStop", "^stop$", [[
 ]])
 
 -- Create trigger: Prompt line (this fires on EVERY prompt)
--- Match SVOF's prompt format: "1539h, 1150m, 5491e, 4600w ex-" or with battlerage "ex 14r-"
--- SVOF manages the prompt format
-Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e, \\d+w .+-$", [[
+-- Match prompt format: "1657h, 1388m, 6035e, 5000w ex-" or with battlerage "ex0-" or "ex 14r-"
+-- Regex: numbers followed by h, m, e, w, then balance indicators, optional rage (with or without space), then dash
+Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e, \\d+w [a-z]+\\s?\\d*r?-", [[
     Falkor:onPrompt(line)
 ]], true)
 
@@ -160,8 +218,62 @@ Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that w
 
 -- Create trigger: Must stand first (auto-stand)
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
-    if Falkor.autoAttack then
+    if Falkor.player.autoAttack then
         Falkor:log("<yellow>Must stand! Standing up...")
-        svo.doadd("stand", false, false)
+        Falkor:queueCommand("stand", 10)  -- High priority
     end
+]])
+
+-- Create alias: fplayer (display player status)
+Falkor:registerAlias("aliasFplayer", "^fplayer$", [[
+    Falkor:log("<cyan>========================================")
+    Falkor:log("<cyan>Falkor Player Status")
+    Falkor:log("<cyan>========================================")
+    
+    -- Vitals
+    local hp_pct = Falkor.player.maxHealth > 0 and math.floor((Falkor.player.health / Falkor.player.maxHealth) * 100) or 0
+    local mp_pct = Falkor.player.maxMana > 0 and math.floor((Falkor.player.mana / Falkor.player.maxMana) * 100) or 0
+    local ep_pct = Falkor.player.maxEndurance > 0 and math.floor((Falkor.player.endurance / Falkor.player.maxEndurance) * 100) or 0
+    local wp_pct = Falkor.player.maxWillpower > 0 and math.floor((Falkor.player.willpower / Falkor.player.maxWillpower) * 100) or 0
+    
+    Falkor:log("<white>Health:     <green>" .. Falkor.player.health .. "<white>/<green>" .. Falkor.player.maxHealth .. " <white>(" .. hp_pct .. "%)")
+    Falkor:log("<white>Mana:       <cyan>" .. Falkor.player.mana .. "<white>/<cyan>" .. Falkor.player.maxMana .. " <white>(" .. mp_pct .. "%)")
+    Falkor:log("<white>Endurance:  <yellow>" .. Falkor.player.endurance .. "<white>/<yellow>" .. Falkor.player.maxEndurance .. " <white>(" .. ep_pct .. "%)")
+    Falkor:log("<white>Willpower:  <magenta>" .. Falkor.player.willpower .. "<white>/<magenta>" .. Falkor.player.maxWillpower .. " <white>(" .. wp_pct .. "%)")
+    Falkor:log("<white>Rage:       <red>" .. Falkor.player.rage .. "<white>/<red>" .. Falkor.player.maxRage)
+    
+    -- Balance states
+    Falkor:log("")
+    local balStr = (Falkor.player.hasBalance and "<green>YES" or "<red>NO")
+    local eqStr = (Falkor.player.hasEquilibrium and "<green>YES" or "<red>NO")
+    Falkor:log("<white>Balance:      " .. balStr)
+    Falkor:log("<white>Equilibrium:  " .. eqStr)
+    
+    -- Combat state
+    Falkor:log("")
+    local attackStr = (Falkor.player.autoAttack and "<green>ENABLED" or "<red>DISABLED")
+    Falkor:log("<white>Auto-attack:  " .. attackStr)
+    Falkor:log("<white>Target:       <cyan>" .. (Falkor.player.target or "<gray>none"))
+    
+    -- Location
+    if Falkor.player.location or Falkor.player.area then
+        Falkor:log("")
+        if Falkor.player.location then
+            Falkor:log("<white>Location:     <yellow>" .. Falkor.player.location)
+        end
+        if Falkor.player.area then
+            Falkor:log("<white>Area:         <yellow>" .. Falkor.player.area)
+        end
+    end
+    
+    -- Command queue
+    if Falkor.balance and Falkor.balance.commandQueue then
+        local queueSize = #Falkor.balance.commandQueue
+        if queueSize > 0 then
+            Falkor:log("")
+            Falkor:log("<white>Command Queue: <yellow>" .. queueSize .. " <white>pending")
+        end
+    end
+    
+    Falkor:log("<cyan>========================================")
 ]])

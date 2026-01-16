@@ -11,6 +11,7 @@ local OUTPUT_FILE = BUILD_DIR .. "/" .. PACKAGE_NAME .. ".xml"
 local LOAD_ORDER = {
     "log.lua",
     "main.lua",  -- Load early to provide utility functions
+    "balance.lua",  -- Balance tracking must load before modules that use it
     "player.lua",
     "runewarden.lua",
     "butterflies.lua",

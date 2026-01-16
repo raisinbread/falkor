@@ -5,9 +5,6 @@ Falkor = Falkor or {}
 
 -- Initialize runewarden state
 function Falkor:initRunewarden()
-    self.currentRage = 0     -- Track current rage level
-    self.maxRage = 100       -- Maximum rage (standard)
-    
     -- Battlerage abilities configuration
     self.battlerageAbilities = {
         collide = {
@@ -29,17 +26,17 @@ function Falkor:initRunewarden()
 end
 
 -- Balanceful function for Collide
--- Called by SVOF when balance is available
+-- Called when balance is available
 function Falkor.autoCollide()
     local ability = Falkor.battlerageAbilities.collide
     
     -- Only use if enabled, we have a target, enough rage, and it's off cooldown
     if ability.enabled and 
-       Falkor.lastTarget and 
-       Falkor.currentRage >= ability.rageCost and
+       Falkor.player.target and 
+       Falkor.player.rage >= ability.rageCost and
        not ability.ready then
         
-        send("collide " .. Falkor.lastTarget)
+        send("collide " .. Falkor.player.target)
         
         -- Set cooldown timer
         ability.ready = os.time() + ability.cooldown
@@ -56,13 +53,13 @@ function Falkor.autoCollide()
 end
 
 -- Balanceful function for Bulwark
--- Called by SVOF when balance is available
+-- Called when balance is available
 function Falkor.autoBulwark()
     local ability = Falkor.battlerageAbilities.bulwark
     
     -- Only use if enabled, enough rage, and it's off cooldown
     if ability.enabled and 
-       Falkor.currentRage >= ability.rageCost and
+       Falkor.player.rage >= ability.rageCost and
        not ability.ready then
         
         send("bulwark")
@@ -81,31 +78,24 @@ function Falkor.autoBulwark()
     return false  -- Don't do anything
 end
 
--- Parse rage from GMCP (SVOF tracks this)
+-- Note: Rage parsing is now handled in player.lua parsePrompt()
+-- This function is kept for backward compatibility but does nothing
 function Falkor:parseRage(line)
-    -- SVOF tracks battlerage via gmcp.Char.Vitals
-    if gmcp and gmcp.Char and gmcp.Char.Vitals and gmcp.Char.Vitals.rage then
-        local newRage = tonumber(gmcp.Char.Vitals.rage)
-        if newRage and newRage ~= self.currentRage then
-            self.currentRage = newRage
-            -- Uncomment for debugging:
-            -- Falkor:log("<yellow>Rage updated: " .. self.currentRage)
-        end
-    end
+    -- Rage is now parsed in Falkor.player.rage by parsePrompt()
 end
 
 -- Enable auto-collide
 function Falkor:enableCollide()
     local ability = self.battlerageAbilities.collide
     ability.enabled = true
-    svo.addbalanceful("falkor_collide", Falkor.autoCollide)
+    self:addBalanceful("falkor_collide", Falkor.autoCollide)
     Falkor:log("<green>Auto-Collide enabled (requires " .. ability.rageCost .. " rage, " .. ability.cooldown .. "s cooldown)")
 end
 
 -- Disable auto-collide
 function Falkor:disableCollide()
     self.battlerageAbilities.collide.enabled = false
-    svo.removebalanceful("falkor_collide")
+    self:removeBalanceful("falkor_collide")
     Falkor:log("<red>Auto-Collide disabled")
 end
 
@@ -122,14 +112,14 @@ end
 function Falkor:enableBulwark()
     local ability = self.battlerageAbilities.bulwark
     ability.enabled = true
-    svo.addbalanceful("falkor_bulwark", Falkor.autoBulwark)
+    self:addBalanceful("falkor_bulwark", Falkor.autoBulwark)
     Falkor:log("<green>Auto-Bulwark enabled (requires " .. ability.rageCost .. " rage, " .. ability.cooldown .. "s cooldown)")
 end
 
 -- Disable auto-bulwark
 function Falkor:disableBulwark()
     self.battlerageAbilities.bulwark.enabled = false
-    svo.removebalanceful("falkor_bulwark")
+    self:removeBalanceful("falkor_bulwark")
     Falkor:log("<red>Auto-Bulwark disabled")
 end
 
@@ -147,7 +137,7 @@ function Falkor:manualCollide(target)
     local ability = self.battlerageAbilities.collide
     
     if not target then
-        target = self.lastTarget
+        target = self.player.target
     end
     
     if not target then
@@ -155,8 +145,8 @@ function Falkor:manualCollide(target)
         return
     end
     
-    if self.currentRage < ability.rageCost then
-        Falkor:log("<yellow>Not enough rage for Collide (need " .. ability.rageCost .. ", have " .. self.currentRage .. ")")
+    if self.player.rage < ability.rageCost then
+        Falkor:log("<yellow>Not enough rage for Collide (need " .. ability.rageCost .. ", have " .. self.player.rage .. ")")
         return
     end
     
@@ -166,15 +156,15 @@ function Falkor:manualCollide(target)
         return
     end
     
-    svo.doadd("collide " .. target, false, false)
+    self:queueCommand("collide " .. target)
 end
 
 -- Manual bulwark command
 function Falkor:manualBulwark()
     local ability = self.battlerageAbilities.bulwark
     
-    if self.currentRage < ability.rageCost then
-        Falkor:log("<yellow>Not enough rage for Bulwark (need " .. ability.rageCost .. ", have " .. self.currentRage .. ")")
+    if self.player.rage < ability.rageCost then
+        Falkor:log("<yellow>Not enough rage for Bulwark (need " .. ability.rageCost .. ", have " .. self.player.rage .. ")")
         return
     end
     
@@ -184,18 +174,18 @@ function Falkor:manualBulwark()
         return
     end
     
-    svo.doadd("bulwark", false, false)
+    self:queueCommand("bulwark")
 end
 
 -- Initialize runewarden module
 Falkor:initRunewarden()
 
--- Register battlerage abilities with SVOF (since Falkor loads after SVOF)
+-- Register battlerage abilities with the balance system
 if Falkor.battlerageAbilities.collide.enabled then
-    svo.addbalanceful("falkor_collide", Falkor.autoCollide)
+    Falkor:addBalanceful("falkor_collide", Falkor.autoCollide)
 end
 if Falkor.battlerageAbilities.bulwark.enabled then
-    svo.addbalanceful("falkor_bulwark", Falkor.autoBulwark)
+    Falkor:addBalanceful("falkor_bulwark", Falkor.autoBulwark)
 end
 
 -- ============================================
@@ -231,7 +221,7 @@ Falkor:registerAlias("aliasRageStatus", "^rage$", [[
     local collide = Falkor.battlerageAbilities.collide
     local bulwark = Falkor.battlerageAbilities.bulwark
     
-    Falkor:log("<cyan>Current Rage: " .. Falkor.currentRage .. "/" .. Falkor.maxRage)
+    Falkor:log("<cyan>Current Rage: " .. Falkor.player.rage .. "/" .. Falkor.player.maxRage)
     Falkor:log("<cyan>Auto-Collide: " .. (collide.enabled and "ON" or "OFF") .. 
                " (Cost: " .. collide.rageCost .. " rage, CD: " .. collide.cooldown .. "s)")
     Falkor:log("<cyan>Auto-Bulwark: " .. (bulwark.enabled and "ON" or "OFF") .. 

@@ -71,12 +71,12 @@ Building creates a new Mudlet XML package file.
 
 ## Features
 
-### SVOF Integration
-Falkor integrates with SVOF (Svo's free system) for intelligent queue management:
-- Uses `svo.doadd()` for one-off balance-dependent actions
-- Uses `svo.addbalanceful()` for repeating combat actions
-- Uses `svo.addbalanceless()` for off-balance abilities
-- Automatic balance/equilibrium checking and queuing
+### Balance & Queue System
+Falkor includes a self-contained balance tracking and command queue system:
+- Automatic balance/equilibrium detection from prompts
+- Intelligent command queuing with priority support
+- Balanceful function system for repeating combat actions
+- No external dependencies required
 - No command stacking or timing issues
 
 ### Battlerage System
@@ -89,7 +89,7 @@ The Runewarden module provides intelligent battlerage ability management:
 
 ### Auto-Attack
 - Intelligent target tracking from game prompt
-- Automatic attack queueing via SVOF
+- Automatic attack queueing via built-in queue system
 - Auto-disables on target death or error conditions
 - Integrates with battlerage abilities
 
@@ -100,7 +100,7 @@ The code follows Lua best practices:
 - Object-oriented style with `self` for method calls
 - Proper initialization and cleanup for reloading
 - Modular structure ready for expansion
-- Event-driven architecture for SVOF integration
+- Self-contained with no external dependencies
 
 ## Development
 
