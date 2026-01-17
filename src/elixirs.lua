@@ -1,5 +1,6 @@
 -- Elixirs module: Automatic health and mana recovery
 -- Monitors vitals and drinks elixirs when they drop below configured thresholds
+-- Manages elixir balance separately from combat balance
 
 Falkor = Falkor or {}
 
@@ -9,53 +10,68 @@ function Falkor:initElixirs()
         -- Configuration (edit these values to customize)
         healthThreshold = 50,  -- Percentage below which to drink health
         manaThreshold = 50,    -- Percentage below which to drink mana
+        
+        -- Elixir balance tracking
+        canDrink = true,       -- Whether we can drink an elixir right now
     }
+    
+    -- Register trigger for elixir balance
+    self:registerTrigger("triggerElixirBalance", "You may drink another health or mana elixir", [[
+        Falkor.elixirs.canDrink = true
+        Falkor:tryDrinkElixir()
+    ]])
     
     Falkor:log("<green>Elixir system initialized.")
 end
 
 -- Check if we need to drink health elixir
-function Falkor:checkHealthElixir()
+function Falkor:needsHealthElixir()
     -- Calculate health percentage
     if self.player.maxHealth == 0 then
         return false
     end
     
     local healthPct = (self.player.health / self.player.maxHealth) * 100
-    
-    -- Check if we need to drink
-    if healthPct < self.elixirs.healthThreshold then
-        self:addAction("drink health")
-        return true
-    end
-    
-    return false
+    return healthPct < self.elixirs.healthThreshold
 end
 
 -- Check if we need to drink mana elixir
-function Falkor:checkManaElixir()
+function Falkor:needsManaElixir()
     -- Calculate mana percentage
     if self.player.maxMana == 0 then
         return false
     end
     
     local manaPct = (self.player.mana / self.player.maxMana) * 100
-    
-    -- Check if we need to drink
-    if manaPct < self.elixirs.manaThreshold then
-        self:addAction("drink mana")
-        return true
+    return manaPct < self.elixirs.manaThreshold
+end
+
+-- Try to drink an elixir if we can and need to
+function Falkor:tryDrinkElixir()
+    -- Can't drink if we're on elixir cooldown
+    if not self.elixirs.canDrink then
+        return
     end
     
-    return false
+    -- Priority 1: Health (more important to stay alive)
+    if self:needsHealthElixir() then
+        send("drink health")
+        self.elixirs.canDrink = false
+        return
+    end
+    
+    -- Priority 2: Mana
+    if self:needsManaElixir() then
+        send("drink mana")
+        self.elixirs.canDrink = false
+        return
+    end
 end
 
 -- Main elixir check function (called on prompt)
 function Falkor:checkElixirs()
-    -- Check both health and mana
-    -- They'll be queued with appropriate priorities
-    self:checkHealthElixir()
-    self:checkManaElixir()
+    -- Try to drink if we need to and can
+    self:tryDrinkElixir()
 end
 
 -- Initialize elixir module
