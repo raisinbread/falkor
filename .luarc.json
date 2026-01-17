@@ -1,0 +1,19 @@
+{
+  "diagnostics": {
+    "globals": [
+      "send",
+      "tempTrigger",
+      "killTrigger",
+      "tempRegexTrigger",
+      "tempAlias",
+      "killAlias",
+      "tempTimer",
+      "cecho",
+      "echo",
+      "gmcp"
+    ]
+  },
+  "runtime": {
+    "version": "Lua 5.1"
+  }
+}
