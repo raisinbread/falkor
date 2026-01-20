@@ -29,14 +29,14 @@ end
 -- Returns true to keep enabled, false to stop
 function Falkor.checkAutoCollide()
     local config = Falkor.config.battlerage.collide
-    return config.enabled and Falkor.player.autoAttack and Falkor.player.target ~= nil
+    return config.enabled and Falkor.combat.hunting.enabled and Falkor.combat.hunting.target ~= nil
 end
 
 -- Check function for Bulwark persistence
 -- Returns true to keep enabled, false to stop
 function Falkor.checkAutoBulwark()
     local config = Falkor.config.battlerage.bulwark
-    return config.enabled and Falkor.player.autoAttack and Falkor.player.target ~= nil
+    return config.enabled and Falkor.combat.hunting.enabled and Falkor.combat.hunting.target ~= nil
 end
 
 -- Execute Collide if conditions are met
@@ -45,8 +45,8 @@ function Falkor.executeCollide()
     local config = Falkor.config.battlerage.collide
     
     -- Only use if we have enough rage and it's off cooldown
-    if Falkor.player.rage >= config.rageCost and not ability.ready and Falkor.player.target then
-        send(COMMAND_COLLIDE .. " " .. Falkor.player.target)
+    if Falkor.player.rage >= config.rageCost and not ability.ready and Falkor.combat.hunting.target then
+        send(COMMAND_COLLIDE .. " " .. Falkor.combat.hunting.target.id)
         
         -- Set cooldown timer
         ability.ready = os.time() + config.cooldown
@@ -86,7 +86,10 @@ function Falkor:manualCollide(target)
     local config = self.config.battlerage.collide
     
     if not target then
-        target = self.player.target
+        -- Try to use combat system's target
+        if self.combat.hunting.target then
+            target = self.combat.hunting.target.id
+        end
     end
     
     if not target then

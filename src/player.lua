@@ -1,5 +1,5 @@
--- Player module: Core state management and combat
--- Handles bashing, auto-attack, and prompt parsing
+-- Player module: Core state management
+-- Handles vitals tracking and prompt parsing
 
 Falkor = Falkor or {}
 
@@ -23,10 +23,6 @@ function Falkor:initPlayer()
         hasBalance = true,
         hasEquilibrium = true,
         
-        -- Combat state
-        autoAttack = false,
-        target = nil,
-        
         -- Location
         location = nil,
         area = nil,
@@ -40,12 +36,6 @@ function Falkor:initPlayer()
     
     Falkor:log("<green>Falkor player system initialized.")
     Falkor:log("<yellow>Prompt configured: health, mana, endurance, willpower, balance/eq, rage")
-end
-
--- Check function for auto-attack persistence
--- Returns true to keep attacking, false to stop
-function Falkor.checkAutoAttack()
-    return Falkor.player.autoAttack and Falkor.player.target ~= nil
 end
 
 -- Parse the prompt to extract current game state
@@ -74,11 +64,6 @@ function Falkor:parsePrompt(line)
     else
         -- If no rage number shown, it's 0
         self.player.rage = 0
-    end
-    
-    -- Track target via GMCP
-    if gmcp and gmcp.Char and gmcp.Char.Combat and gmcp.Char.Combat.Target then
-        self.player.target = gmcp.Char.Combat.Target
     end
     
     -- Track location via GMCP
@@ -130,33 +115,6 @@ function Falkor:onPrompt(line)
     end
 end
 
--- Start auto-attacking (set target in game, enable auto-attack)
--- targetName: optional target name. If nil, just enables auto-attack without changing target
-function Falkor:startAttack(targetName)
-    if targetName then
-        send("settarget " .. targetName)
-        self.player.target = targetName
-        Falkor:log("<green>Auto-attack enabled for: " .. targetName)
-    else
-        Falkor:log("<green>Auto-attack enabled (using current target).")
-    end
-    self.player.autoAttack = true
-    
-    -- Add persistent attack action
-    local attackCommand = "kill " .. (targetName or self.player.target)
-    self:addPersistentAction(attackCommand, "bal", Falkor.checkAutoAttack, "falkor_autoattack")
-end
-
--- Stop auto-attacking
-function Falkor:stopAttack()
-    self.player.autoAttack = false
-    
-    -- Remove our attack function from persistent actions
-    self:removePersistentAction("falkor_autoattack")
-    
-    Falkor:log("<red>Auto-attack disabled.")
-end
-
 -- Initialize player module
 Falkor:initPlayer()
 
@@ -176,52 +134,12 @@ end
 -- PLAYER ALIASES AND TRIGGERS
 -- ============================================
 
--- Create alias: att [target] (target is optional)
-Falkor:registerAlias("aliasAttack", "^att( .+)?$", [[
-    local target = matches[2]
-    if target then
-        -- Remove leading space
-        target = string.gsub(target, Falkor.PATTERNS.LEADING_SPACE_SINGLE, "")
-    else
-        -- No target provided, try to use the current target
-        target = Falkor.player.target
-        if not target then
-            Falkor:log("<yellow>No target specified and no current target found. Use 'att <target>' to set a target.")
-            return
-        end
-    end
-    Falkor:startAttack(target)
-]])
-
--- Create alias: stop
-Falkor:registerAlias("aliasStop", "^stop$", [[
-    Falkor:stopAttack()
-]])
-
 -- Create trigger: Prompt line (this fires on EVERY prompt)
 -- Match prompt format: "1657h, 1388m, 6035e, 5000w ex-" or with battlerage "ex0-" or "ex 14r-"
 -- Regex: numbers followed by h, m, e, w, then balance indicators, optional rage (with or without space), then dash
 Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e, \\d+w [a-z]+\\s?\\d*r?-", [[
     Falkor:onPrompt(line)
 ]], true)
-
--- DISABLED: Old auto-attack triggers (replaced by hunting system)
--- These are commented out to avoid conflicts with the new hunting system
---
--- Falkor:registerTrigger("triggerSlain", "You have slain", [[
---     Falkor:stopAttack()
---     Falkor:log("<green>Target slain! Auto-attack disabled.")
--- ]])
---
--- Falkor:registerTrigger("triggerMissedTarget", "but see nothing by that name here!", [[
---     Falkor:stopAttack()
---     Falkor:log("<yellow>Target not found! Auto-attack disabled.")
--- ]])
---
--- Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that with.", [[
---     Falkor:stopAttack()
---     Falkor:log("<red>No weapon wielded! Auto-attack disabled.")
--- ]])
 
 -- Create trigger: Must stand first (auto-stand)
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
@@ -278,11 +196,18 @@ Falkor:registerAlias("aliasFplayer", "^fplayer$", [[
     Falkor:log("<white>Balance:      " .. balStr)
     Falkor:log("<white>Equilibrium:  " .. eqStr)
     
-    -- Combat state
+    -- Combat system status
     Falkor:log("")
-    local attackStr = (Falkor.player.autoAttack and "<green>ENABLED" or "<red>DISABLED")
-    Falkor:log("<white>Auto-attack:  " .. attackStr)
-    Falkor:log("<white>Target:       <cyan>" .. (Falkor.player.target or "<gray>none"))
+    local huntingStr = (Falkor.combat.hunting.enabled and "<green>ENABLED" or "<red>DISABLED")
+    Falkor:log("<white>Hunting:      " .. huntingStr)
+    if Falkor.combat.hunting.target then
+        Falkor:log("<white>Target:       <yellow>" .. Falkor.combat.hunting.target.name .. " <gray>(ID: " .. Falkor.combat.hunting.target.id .. ")")
+    else
+        Falkor:log("<white>Target:       <gray>none")
+    end
+    if Falkor.combat.hunting.searchString then
+        Falkor:log("<white>Hunt Search:  <cyan>" .. Falkor.combat.hunting.searchString)
+    end
     
     -- Location
     if Falkor.player.location or Falkor.player.area then
