@@ -16,9 +16,9 @@ local LOAD_ORDER = {
     "balance.lua",  -- Balance tracking must load before modules that use it
     "player.lua",
     "elixirs.lua",  -- Elixir system depends on player module
+    "combat.lua",  -- Combat tracking system
     "runewarden.lua",
     "butterflies.lua",
-    "rats.lua",
 }
 
 -- Escape XML special characters (only &, <, > need escaping in element content)
@@ -38,6 +38,24 @@ local function readFile(path)
     local content = file:read("*a")
     file:close()
     return content
+end
+
+-- Check Lua file for syntax errors
+local function checkSyntax(path)
+    -- Use luac -p for syntax-only checking (doesn't execute code)
+    local handle = io.popen("luac -p \"" .. path .. "\" 2>&1")
+    if not handle then
+        return false, "Could not run syntax check"
+    end
+    
+    local output = handle:read("*a")
+    local success = handle:close()
+    
+    if not success or output ~= "" then
+        return false, output
+    end
+    
+    return true, nil
 end
 
 -- Write file contents
@@ -122,6 +140,15 @@ local function build()
     -- First, process files in explicit load order
     for _, filename in ipairs(LOAD_ORDER) do
         local path = SRC_DIR .. "/" .. filename
+        
+        -- Check syntax first
+        local syntaxOk, syntaxError = checkSyntax(path)
+        if not syntaxOk then
+            print("  ERROR in " .. filename .. ":")
+            print("    " .. syntaxError)
+            error("Syntax error in " .. filename .. ", aborting build")
+        end
+        
         local content = readFile(path)
         if content then
             -- Replace placeholder with actual XML path (only for main.lua)
@@ -146,6 +173,15 @@ local function build()
 
     for _, filename in ipairs(extras) do
         local path = SRC_DIR .. "/" .. filename
+        
+        -- Check syntax first
+        local syntaxOk, syntaxError = checkSyntax(path)
+        if not syntaxOk then
+            print("  ERROR in " .. filename .. ":")
+            print("    " .. syntaxError)
+            error("Syntax error in " .. filename .. ", aborting build")
+        end
+        
         local content = readFile(path)
         if content then
             -- Replace placeholder with actual XML path (only for main.lua)

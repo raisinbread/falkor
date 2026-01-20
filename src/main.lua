@@ -247,12 +247,20 @@ end
 -- Initialize registry on module load
 Falkor:initRegistry()
 
+-- Reset reload flag on module load
+Falkor.reloadInProgress = false
+
 Falkor:log("<green>========================================")
 Falkor:log("<green>Falkor Combat Script Loaded!")
 Falkor:log("<green>========================================")
 Falkor:log("<cyan>Combat Commands:")
 Falkor:log("<white>  att <target>        - Begin attacking a target")
 Falkor:log("<white>  stop                - Stop auto-attacking")
+Falkor:log("<white>  fhunt <name>        - Start hunting denizens (e.g., 'fhunt rat')")
+Falkor:log("<white>  fstophunt           - Stop hunting")
+Falkor:log("<white>  combatstart         - Enable combat denizen tracking")
+Falkor:log("<white>  combatstop          - Disable combat denizen tracking")
+Falkor:log("<white>  fcombat             - Show denizens in current room")
 Falkor:log("<cyan>Battlerage Commands:")
 Falkor:log("<white>  collide [target]    - Manual Collide")
 Falkor:log("<white>  bulwark             - Manual Bulwark")
@@ -278,6 +286,13 @@ Falkor:log("<green>========================================")
 
 -- Create alias: falkor (reinstall Falkor module)
 Falkor:registerAlias("aliasReinstall", "^falkor$", [[
+    -- Prevent multiple simultaneous reloads
+    if Falkor.reloadInProgress then
+        return
+    end
+    
+    Falkor.reloadInProgress = true
+    
     -- Uninstall the existing module first
     uninstallModule("Falkor")
     
@@ -285,6 +300,7 @@ Falkor:registerAlias("aliasReinstall", "^falkor$", [[
     tempTimer(Falkor.config.timers.moduleReloadDelay, function()
         installModule("__FALKOR_XML_PATH__")
         echo("\nFalkor module reloaded!\n")
+        -- Note: reloadInProgress will be reset when the new module loads
     end)
 ]])
 

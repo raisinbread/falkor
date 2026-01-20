@@ -103,12 +103,12 @@ Falkor:registerTrigger("triggerVellisPresent", "Vellis, the butterfly collector"
         -- Starting sequence: wait for Vellis, then agree
         Falkor.butterflies.startStep = 1
         Falkor:log("<green>Vellis detected! Starting setup sequence...")
-        Falkor:addAction("agree")
+        Falkor:queueCommand("agree")
     elseif Falkor.butterflies and Falkor.butterflies.sellPending and Falkor.butterflies.sellStep == 0 then
         -- Selling sequence: wait for Vellis, then agree
         Falkor.butterflies.sellStep = 1
         Falkor:log("<green>Vellis detected! Starting sell sequence...")
-        Falkor:addAction("agree")
+        Falkor:queueCommand("agree")
     end
 ]])
 
@@ -120,17 +120,17 @@ function Falkor:handleButterfliesStep()
         -- Just agreed, now greet
         self.butterflies.startStep = 2
         Falkor:log("<cyan>Greeting Vellis...")
-        self:addAction("greet Vellis")
+        self:queueCommand("greet Vellis")
     elseif self.butterflies.startStep == 2 then
         -- Just greeted, now agree again
         self.butterflies.startStep = 3
         Falkor:log("<cyan>Agreeing again...")
-        self:addAction("agree")
+        self:queueCommand("agree")
     elseif self.butterflies.startStep == 3 then
         -- Just agreed again, now wield net
         self.butterflies.startStep = 4
         Falkor:log("<cyan>Wielding net...")
-        self:addAction("wield net")
+        self:queueCommand("wield net")
     elseif self.butterflies.startStep == 4 then
         -- Just wielded net, enable butterfly catching
         self.butterflies.startStep = 0
@@ -148,7 +148,7 @@ function Falkor:handleSellButterfliesStep()
         -- Just agreed, now give net
         self.butterflies.sellStep = 2
         Falkor:log("<cyan>Giving net to Vellis...")
-        self:addAction("give net to Vellis")
+        self:queueCommand("give net to Vellis")
     elseif self.butterflies.sellStep == 2 then
         -- Just gave net, turn off butterfly catching
         self.butterflies.sellStep = 0

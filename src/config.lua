@@ -39,7 +39,7 @@ function Falkor:initConfig()
         
         -- System timers
         timers = {
-            moduleReloadDelay = 0.5,  -- Delay in seconds before reinstalling module
+            moduleReloadDelay = 1.5,  -- Delay in seconds before reinstalling module
         },
         
         -- Debug and logging configuration

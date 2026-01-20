@@ -42,15 +42,10 @@ function Falkor:initPlayer()
     Falkor:log("<yellow>Prompt configured: health, mana, endurance, willpower, balance/eq, rage")
 end
 
--- Balanceful function for auto-attacking
--- This gets called when balance is available
-function Falkor.handleAutoAttack()
-    -- Only attack if auto-attack is enabled and we have a target
-    if Falkor.player.autoAttack and Falkor.player.target then
-        send("kill " .. Falkor.player.target)
-        return true  -- We sent a command that uses balance
-    end
-    return false  -- Don't do anything
+-- Check function for auto-attack persistence
+-- Returns true to keep attacking, false to stop
+function Falkor.checkAutoAttack()
+    return Falkor.player.autoAttack and Falkor.player.target ~= nil
 end
 
 -- Parse the prompt to extract current game state
@@ -118,24 +113,19 @@ function Falkor:onPrompt(line)
     -- Parse all player state from prompt
     self:parsePrompt(line)
     
-    -- Update balance system state from prompt
+    -- Update balance system state from prompt and trigger hooks
     if self.balance then
-        self.balance.hasBalance = self.player.hasBalance
-        self.balance.hasEquilibrium = self.player.hasEquilibrium
-        
-        -- Always try to process queue on every prompt
-        -- processQueue() will decide if it should act based on balance and whether it's already processed
-        self:processQueue()
+        self:updateBalanceFromPrompt(line)
     end
     
-    -- Check elixirs (health/mana recovery) - runs independently of balance queue
+    -- Check elixirs (health/mana recovery) - runs independently of balance
     if self.elixirs then
         self:checkElixirs()
     end
     
     -- Catch butterflies if we have pending catches
     if self.butterflies and self.butterflies.pendingCatches and self.butterflies.pendingCatches > 0 then
-        self:addAction("catch butterfly")
+        self:queueCommand("catch butterfly")
         self.butterflies.pendingCatches = self.butterflies.pendingCatches - 1
     end
 end
@@ -152,22 +142,35 @@ function Falkor:startAttack(targetName)
     end
     self.player.autoAttack = true
     
-    -- Add our attack function to the action queue
-    self:addAction(Falkor.handleAutoAttack, true, "falkor_autoattack")
+    -- Add persistent attack action
+    local attackCommand = "kill " .. (targetName or self.player.target)
+    self:addPersistentAction(attackCommand, "bal", Falkor.checkAutoAttack, "falkor_autoattack")
 end
 
 -- Stop auto-attacking
 function Falkor:stopAttack()
     self.player.autoAttack = false
     
-    -- Remove our attack function from the action queue
-    self:removeAction("falkor_autoattack")
+    -- Remove our attack function from persistent actions
+    self:removePersistentAction("falkor_autoattack")
     
     Falkor:log("<red>Auto-attack disabled.")
 end
 
 -- Initialize player module
 Falkor:initPlayer()
+
+-- ============================================
+-- RAT SELLING
+-- ============================================
+
+-- Start selling rats (walk to Hakhim)
+function Falkor:sellRats()
+    self.player.sellRatsPending = true
+    Falkor:log("<cyan>Walking to Hakhim to sell rats...")
+    send("rats")
+    send("walk to Hakhim")
+end
 
 -- ============================================
 -- PLAYER ALIASES AND TRIGGERS
@@ -202,38 +205,52 @@ Falkor:registerTrigger("triggerPrompt", "^\\d+h, \\d+m, \\d+e, \\d+w [a-z]+\\s?\
     Falkor:onPrompt(line)
 ]], true)
 
--- Create trigger: Target slain (auto-disables attack)
-Falkor:registerTrigger("triggerSlain", "You have slain", [[
-    Falkor:stopAttack()
-    Falkor:log("<green>Target slain! Auto-attack disabled.")
-]])
-
--- Create trigger: Target not found (auto-disables attack)
-Falkor:registerTrigger("triggerMissedTarget", "but see nothing by that name here!", [[
-    Falkor:stopAttack()
-    Falkor:log("<yellow>Target not found! Auto-attack disabled.")
-]])
-
--- Create trigger: No weapon wielded (auto-disables attack)
-Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that with.", [[
-    Falkor:stopAttack()
-    Falkor:log("<red>No weapon wielded! Auto-attack disabled.")
-]])
+-- DISABLED: Old auto-attack triggers (replaced by hunting system)
+-- These are commented out to avoid conflicts with the new hunting system
+--
+-- Falkor:registerTrigger("triggerSlain", "You have slain", [[
+--     Falkor:stopAttack()
+--     Falkor:log("<green>Target slain! Auto-attack disabled.")
+-- ]])
+--
+-- Falkor:registerTrigger("triggerMissedTarget", "but see nothing by that name here!", [[
+--     Falkor:stopAttack()
+--     Falkor:log("<yellow>Target not found! Auto-attack disabled.")
+-- ]])
+--
+-- Falkor:registerTrigger("triggerNoWeapon", "You haven't got a weapon to do that with.", [[
+--     Falkor:stopAttack()
+--     Falkor:log("<red>No weapon wielded! Auto-attack disabled.")
+-- ]])
 
 -- Create trigger: Must stand first (auto-stand)
 Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
     Falkor:log("<yellow>Must stand! Standing up...")
-    Falkor:addAction("stand")
+    Falkor:queueCommand("stand")
 ]])
 
 -- Create trigger: Gold from corpse (auto-pickup)
 Falkor:registerTrigger("triggerGoldFromCorpse", "sovereigns spills from the corpse", [[
-    Falkor:addAction("get gold")
+    Falkor:queueCommand("get gold")
 ]])
 
 -- Create trigger: Gold in room (auto-pickup)
 Falkor:registerTrigger("triggerGoldInRoom", "a small pile of golden sovereigns", [[
-    Falkor:addAction("get gold")
+    Falkor:queueCommand("get gold")
+]])
+
+-- Create trigger: Arrived at destination (sell rats if pending)
+Falkor:registerTrigger("triggerArrived", "You have arrived at your destination!", [[
+    if Falkor.player.sellRatsPending then
+        Falkor:log("<green>Arrived! Selling rats to Hakhim...")
+        Falkor:queueCommand("sell rats to Hakhim")
+        Falkor.player.sellRatsPending = false
+    end
+]])
+
+-- Create alias: sellrats (walk to Hakhim and sell rats)
+Falkor:registerAlias("aliasSellRats", "^sellrats$", [[
+    Falkor:sellRats()
 ]])
 
 -- Create alias: fplayer (display player status)

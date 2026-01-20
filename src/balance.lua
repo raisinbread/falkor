@@ -1,4 +1,4 @@
--- Balance module: Balance/equilibrium tracking and command queue
+-- Balance module: Balance/equilibrium tracking using server-side queueing
 
 Falkor = Falkor or {}
 
@@ -7,145 +7,184 @@ function Falkor:initBalance()
     self.balance = {
         hasBalance = true,
         hasEquilibrium = true,
-        actions = {},  -- FIFO queue of all actions
-        queueProcessed = false,  -- Whether we've processed the queue for current balance state
+        persistentActions = {},  -- Persistent actions: { name -> { command, queueType, checkFunc } }
+        persistentCallbacks = {},  -- Persistent callbacks: { name -> { func, checkFunc } }
     }
     
-    Falkor:log("<green>Balance tracking system initialized.")
-end
-
--- Add an action to the queue
--- action: either a command string to send, or a function to call
--- persistent: if true, action stays in queue and runs repeatedly when balance available
--- name: optional name for persistent actions (used for removal)
-function Falkor:addAction(action, persistent, name)
-    table.insert(self.balance.actions, {
-        action = action,
-        persistent = persistent or false,
-        name = name
-    })
+    -- Enable server-side queueing
+    send("config usequeueing on")
+    send("config showqueuealerts off")
     
-    -- Reset queueProcessed so the new action can be processed on the next prompt
-    -- Don't call processQueue() here because balance state may be stale
-    -- The queue will be processed on the next prompt when balance state is fresh
-    self.balance.queueProcessed = false
+    Falkor:log("<green>Balance tracking system initialized (using server-side queueing).")
 end
 
--- Remove an action by name
-function Falkor:removeAction(name)
-    for i = #self.balance.actions, 1, -1 do
-        if self.balance.actions[i].name == name then
-            table.remove(self.balance.actions, i)
-        end
-    end
+-- Add a command to the server-side queue
+-- command: command string to send
+-- queueType: queue type (default "eqbal" - both balance and equilibrium)
+--   Options: "bal", "eq", "eqbal", "free", "freestand", etc.
+function Falkor:queueCommand(command, queueType)
+    queueType = queueType or "eqbal"
+    send(string.format("queue add %s %s", queueType, command))
 end
 
--- Process actions in strict FIFO order (first-in-first-out)
--- Persistent actions stay in queue after execution, non-persistent are removed
-function Falkor:processQueue()
-    -- Only process if we have balance and equilibrium
-    if not self.balance.hasBalance or not self.balance.hasEquilibrium then
-        self.balance.queueProcessed = false
+-- Clear the server-side queue
+-- queueType: optional queue type to clear (default "all")
+function Falkor:clearQueue(queueType)
+    queueType = queueType or "all"
+    send(string.format("clearqueue %s", queueType))
+end
+
+-- Add a persistent action (command that re-queues when balance is regained)
+-- command: command string to queue
+-- queueType: queue type (default "eqbal")
+-- checkFunc: function that returns true to continue, false to expire
+-- name: unique name for the action (used for removal)
+function Falkor:addPersistentAction(command, queueType, checkFunc, name)
+    if not name then
+        self:log("<red>Error: Persistent actions must have a name")
         return
     end
     
-    -- Don't process if we've already processed for this balance state
-    if self.balance.queueProcessed then
+    if not command then
+        self:log("<red>Error: Persistent actions must have a command")
         return
     end
     
-    -- Process actions in strict FIFO order (insertion order)
-    for i, entry in ipairs(self.balance.actions) do
-        local action = entry.action
-        local used = false
+    self.balance.persistentActions[name] = {
+        command = command,
+        queueType = queueType or "eqbal",
+        checkFunc = checkFunc
+    }
+end
+
+-- Remove a persistent action by name
+function Falkor:removePersistentAction(name)
+    self.balance.persistentActions[name] = nil
+end
+
+-- Add a persistent callback (function to call when balance is regained)
+-- func: function to execute
+-- checkFunc: function that returns true to continue, false to expire
+-- name: unique name for the callback (used for removal)
+function Falkor:addPersistentCallback(func, checkFunc, name)
+    if not name then
+        self:log("<red>Error: Persistent callbacks must have a name")
+        return
+    end
+    
+    if not func then
+        self:log("<red>Error: Persistent callbacks must have a function")
+        return
+    end
+    
+    self.balance.persistentCallbacks[name] = {
+        func = func,
+        checkFunc = checkFunc
+    }
+end
+
+-- Remove a persistent callback by name
+function Falkor:removePersistentCallback(name)
+    self.balance.persistentCallbacks[name] = nil
+end
+
+-- Called when balance is regained (detected from prompt change)
+function Falkor:onBalanceRegained()
+    -- Process persistent actions (queued commands)
+    local toRemove = {}
+    
+    for name, action in pairs(self.balance.persistentActions) do
+        local shouldContinue = true
         
-        if type(action) == "string" then
-            -- It's a command string
-            send(action)
-            used = true
-        elseif type(action) == "function" then
-            -- It's a function - call it and check if it consumed balance
-            used = action()
+        -- If there's a check function, call it
+        if action.checkFunc and type(action.checkFunc) == "function" then
+            shouldContinue = action.checkFunc()
         end
         
-        if used then
-            -- Mark queue as processed for this balance state
-            self.balance.queueProcessed = true
-            
-            -- Remove non-persistent actions after execution
-            if not entry.persistent then
-                table.remove(self.balance.actions, i)
+        if shouldContinue then
+            -- Re-queue the command
+            self:queueCommand(action.command, action.queueType)
+            if self.config.debug.logLevel >= 2 then
+                self:log(string.format("<gray>[DEBUG] Queued: %s", action.command))
             end
-            
-            return
+        else
+            -- Mark for removal
+            table.insert(toRemove, name)
+            if self.config.debug.logLevel >= 2 then
+                self:log(string.format("<gray>[DEBUG] Expired: %s", name))
+            end
+        end
+    end
+    
+    -- Remove expired actions
+    for _, name in ipairs(toRemove) do
+        self.balance.persistentActions[name] = nil
+    end
+    
+    -- Process persistent callbacks (direct execution)
+    toRemove = {}
+    
+    for name, callback in pairs(self.balance.persistentCallbacks) do
+        local shouldContinue = true
+        
+        -- If there's a check function, call it
+        if callback.checkFunc and type(callback.checkFunc) == "function" then
+            shouldContinue = callback.checkFunc()
         end
         
-        -- If action didn't use balance (function returned false), continue to next action
-        -- But still remove non-persistent actions that were processed
-        if not entry.persistent then
-            table.remove(self.balance.actions, i)
+        if shouldContinue then
+            -- Execute the callback
+            if type(callback.func) == "function" then
+                callback.func()
+            end
+        else
+            -- Mark for removal
+            table.insert(toRemove, name)
         end
+    end
+    
+    -- Remove expired callbacks
+    for _, name in ipairs(toRemove) do
+        self.balance.persistentCallbacks[name] = nil
     end
 end
 
--- Set balance state (kept for backward compatibility, but not used)
--- Balance state is now managed by the prompt parser in player.lua
-function Falkor:setBalance(hasBalance)
-    -- No-op: balance state is managed by prompt parser
-end
-
--- Set equilibrium state (kept for backward compatibility, but not used)
--- Equilibrium state is now managed by the prompt parser in player.lua
-function Falkor:setEquilibrium(hasEquilibrium)
-    -- No-op: equilibrium state is managed by prompt parser
+-- Called when equilibrium is regained (detected from prompt change)
+function Falkor:onEquilibriumRegained()
+    -- Currently no specific equilibrium-only actions
+    -- Could be extended in the future
 end
 
 -- Initialize balance module
 Falkor:initBalance()
 
 -- ============================================
--- BALANCE TRIGGERS
+-- BALANCE STATE TRACKING
 -- ============================================
 
--- Trigger: Balance regained
--- Note: We don't call setBalance here because the prompt will handle it
--- This trigger is kept for informational purposes only
-Falkor:registerTrigger("triggerBalanceGained", "You have recovered balance", [[
-    -- Balance state will be updated by the prompt parser
-    -- Don't call setBalance here to avoid duplicate command sends
-]])
-
--- Trigger: Balance lost (various messages)
-Falkor:registerTrigger("triggerBalanceLost", "You must regain balance first", [[
-    Falkor:setBalance(false)
-]])
-
--- Trigger: Equilibrium regained
-Falkor:registerTrigger("triggerEquilibriumGained", "You have recovered equilibrium", [[
-    Falkor:setEquilibrium(true)
-]])
-
--- Trigger: Equilibrium lost
-Falkor:registerTrigger("triggerEquilibriumLost", "You must regain equilibrium first", [[
-    Falkor:setEquilibrium(false)
-]])
-
--- Parse prompt for balance/equilibrium state
+-- Update balance state from prompt and trigger hooks
 -- Prompt format: "1539h, 1150m, 5491e, 4600w ex-" or with battlerage "ex 14r-"
 -- Balance indicators: 'e' = equilibrium, 'x' = balance
-function Falkor:parseBalanceFromPrompt(line)
+function Falkor:updateBalanceFromPrompt(line)
     -- Look for the balance indicators in the prompt
-    -- Format is typically "ex-" or "e-" or "x-" or "--" or "ex 14r-"
-    -- Match the letters before the optional rage and final dash
-    local balanceStr = string.match(line, "(%a+)%s*%d*r?%-$")
+    -- Format is typically "ex-" or "e-" or "x-" or "--" or "ex 14r-" or "ex19--"
+    -- Match the letters before the optional rage/number and final dash(es)
+    local balanceStr = string.match(line, "(%a+)%s*%d*r?%-+$")
     
     if balanceStr then
+        local hadBalance = self.balance.hasBalance
+        local hadEquilibrium = self.balance.hasEquilibrium
+        
         self.balance.hasBalance = string.find(balanceStr, Falkor.PATTERNS.BALANCE_INDICATOR) ~= nil
         self.balance.hasEquilibrium = string.find(balanceStr, Falkor.PATTERNS.EQUILIBRIUM_INDICATOR) ~= nil
         
-        -- Process queue when we gain balance/eq
-        if self.balance.hasBalance or self.balance.hasEquilibrium then
-            self:processQueue()
+        -- Trigger hooks when we regain balance/eq (transition from false to true)
+        if not hadBalance and self.balance.hasBalance then
+            self:onBalanceRegained()
+        end
+        
+        if not hadEquilibrium and self.balance.hasEquilibrium then
+            self:onEquilibriumRegained()
         end
     end
 end

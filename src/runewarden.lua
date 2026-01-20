@@ -25,19 +25,27 @@ function Falkor:initRunewarden()
     Falkor:log("<cyan>Auto-Collide: " .. collideEnabled .. ", Auto-Bulwark: " .. bulwarkEnabled)
 end
 
--- Balanceful function for Collide
--- Called when balance is available
-function Falkor.handleAutoCollide()
+-- Check function for Collide persistence
+-- Returns true to keep enabled, false to stop
+function Falkor.checkAutoCollide()
+    local config = Falkor.config.battlerage.collide
+    return config.enabled and Falkor.player.autoAttack and Falkor.player.target ~= nil
+end
+
+-- Check function for Bulwark persistence
+-- Returns true to keep enabled, false to stop
+function Falkor.checkAutoBulwark()
+    local config = Falkor.config.battlerage.bulwark
+    return config.enabled and Falkor.player.autoAttack and Falkor.player.target ~= nil
+end
+
+-- Execute Collide if conditions are met
+function Falkor.executeCollide()
     local ability = Falkor.battlerageAbilities.collide
     local config = Falkor.config.battlerage.collide
     
-    -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
-    if config.enabled and 
-       Falkor.player.autoAttack and
-       Falkor.player.target and 
-       Falkor.player.rage >= config.rageCost and
-       not ability.ready then
-        
+    -- Only use if we have enough rage and it's off cooldown
+    if Falkor.player.rage >= config.rageCost and not ability.ready and Falkor.player.target then
         send(COMMAND_COLLIDE .. " " .. Falkor.player.target)
         
         -- Set cooldown timer
@@ -47,25 +55,16 @@ function Falkor.handleAutoCollide()
         tempTimer(config.cooldown, function()
             ability.ready = nil
         end)
-        
-        return false  -- Battlerage abilities don't consume balance, allow other actions
     end
-    return false  -- Don't do anything
 end
 
--- Balanceful function for Bulwark
--- Called when balance is available
-function Falkor.handleAutoBulwark()
+-- Execute Bulwark if conditions are met
+function Falkor.executeBulwark()
     local ability = Falkor.battlerageAbilities.bulwark
     local config = Falkor.config.battlerage.bulwark
     
-    -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
-    if config.enabled and 
-       Falkor.player.autoAttack and
-       Falkor.player.target and 
-       Falkor.player.rage >= config.rageCost and
-       not ability.ready then
-        
+    -- Only use if we have enough rage and it's off cooldown
+    if Falkor.player.rage >= config.rageCost and not ability.ready then
         send(COMMAND_BULWARK)
         
         -- Set cooldown timer
@@ -75,10 +74,7 @@ function Falkor.handleAutoBulwark()
         tempTimer(config.cooldown, function()
             ability.ready = nil
         end)
-        
-        return false  -- Battlerage abilities don't consume balance, allow other actions
     end
-    return false  -- Don't do anything
 end
 
 -- Note: Rage parsing is now handled in player.lua parsePrompt()
@@ -109,7 +105,7 @@ function Falkor:manualCollide(target)
         return
     end
     
-    self:addAction(COMMAND_COLLIDE .. " " .. target)
+    self:queueCommand(COMMAND_COLLIDE .. " " .. target, "bal")
 end
 
 -- Manual bulwark command
@@ -128,18 +124,18 @@ function Falkor:manualBulwark()
         return
     end
     
-    self:addAction(COMMAND_BULWARK)
+    self:queueCommand(COMMAND_BULWARK, "bal")
 end
 
 -- Initialize runewarden module
 Falkor:initRunewarden()
 
--- Register battlerage abilities with the balance system
+-- Register battlerage abilities as persistent callbacks
 if Falkor.config.battlerage.collide.enabled then
-    Falkor:addAction(Falkor.handleAutoCollide, true, "falkor_collide")
+    Falkor:addPersistentCallback(Falkor.executeCollide, Falkor.checkAutoCollide, "falkor_collide")
 end
 if Falkor.config.battlerage.bulwark.enabled then
-    Falkor:addAction(Falkor.handleAutoBulwark, true, "falkor_bulwark")
+    Falkor:addPersistentCallback(Falkor.executeBulwark, Falkor.checkAutoBulwark, "falkor_bulwark")
 end
 
 -- ============================================
