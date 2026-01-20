@@ -3,6 +3,10 @@
 
 Falkor = Falkor or {}
 
+-- Constants for this module
+local COMMAND_COLLIDE = "collide"
+local COMMAND_BULWARK = "bulwark"
+
 -- Initialize runewarden state
 function Falkor:initRunewarden()
     -- Battlerage abilities state (configuration is in config.lua)
@@ -23,7 +27,7 @@ end
 
 -- Balanceful function for Collide
 -- Called when balance is available
-function Falkor.autoCollide()
+function Falkor.handleAutoCollide()
     local ability = Falkor.battlerageAbilities.collide
     local config = Falkor.config.battlerage.collide
     
@@ -34,7 +38,7 @@ function Falkor.autoCollide()
        Falkor.player.rage >= config.rageCost and
        not ability.ready then
         
-        send("collide " .. Falkor.player.target)
+        send(COMMAND_COLLIDE .. " " .. Falkor.player.target)
         
         -- Set cooldown timer
         ability.ready = os.time() + config.cooldown
@@ -51,7 +55,7 @@ end
 
 -- Balanceful function for Bulwark
 -- Called when balance is available
-function Falkor.autoBulwark()
+function Falkor.handleAutoBulwark()
     local ability = Falkor.battlerageAbilities.bulwark
     local config = Falkor.config.battlerage.bulwark
     
@@ -62,7 +66,7 @@ function Falkor.autoBulwark()
        Falkor.player.rage >= config.rageCost and
        not ability.ready then
         
-        send("bulwark")
+        send(COMMAND_BULWARK)
         
         -- Set cooldown timer
         ability.ready = os.time() + config.cooldown
@@ -78,10 +82,7 @@ function Falkor.autoBulwark()
 end
 
 -- Note: Rage parsing is now handled in player.lua parsePrompt()
--- This function is kept for backward compatibility but does nothing
-function Falkor:parseRage(line)
-    -- Rage is now parsed in Falkor.player.rage by parsePrompt()
-end
+-- This function is removed as it's no longer needed
 
 -- Manual collide command
 function Falkor:manualCollide(target)
@@ -108,7 +109,7 @@ function Falkor:manualCollide(target)
         return
     end
     
-    self:addAction("collide " .. target)
+    self:addAction(COMMAND_COLLIDE .. " " .. target)
 end
 
 -- Manual bulwark command
@@ -127,7 +128,7 @@ function Falkor:manualBulwark()
         return
     end
     
-    self:addAction("bulwark")
+    self:addAction(COMMAND_BULWARK)
 end
 
 -- Initialize runewarden module
@@ -135,10 +136,10 @@ Falkor:initRunewarden()
 
 -- Register battlerage abilities with the balance system
 if Falkor.config.battlerage.collide.enabled then
-    Falkor:addAction(Falkor.autoCollide, true, "falkor_collide")
+    Falkor:addAction(Falkor.handleAutoCollide, true, "falkor_collide")
 end
 if Falkor.config.battlerage.bulwark.enabled then
-    Falkor:addAction(Falkor.autoBulwark, true, "falkor_bulwark")
+    Falkor:addAction(Falkor.handleAutoBulwark, true, "falkor_bulwark")
 end
 
 -- ============================================
@@ -149,7 +150,7 @@ end
 Falkor:registerAlias("aliasCollide", "^collide( .+)?$", [[
     local target = matches[2]
     if target then
-        target = string.gsub(target, "^ ", "")
+        target = string.gsub(target, Falkor.PATTERNS.LEADING_SPACE_SINGLE, "")
     end
     Falkor:manualCollide(target)
 ]])

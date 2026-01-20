@@ -44,7 +44,7 @@ end
 
 -- Balanceful function for auto-attacking
 -- This gets called when balance is available
-function Falkor.autoAttackFunction()
+function Falkor.handleAutoAttack()
     -- Only attack if auto-attack is enabled and we have a target
     if Falkor.player.autoAttack and Falkor.player.target then
         send("kill " .. Falkor.player.target)
@@ -69,8 +69,8 @@ function Falkor:parsePrompt(line)
     -- Format can be: "ex-" or "ex0-" or "ex 14r-" or "ex14r-"
     local balanceStr, rageStr = string.match(line, "(%a+)%s?(%d*)r?%-")
     if balanceStr then
-        self.player.hasBalance = string.find(balanceStr, "x") ~= nil
-        self.player.hasEquilibrium = string.find(balanceStr, "e") ~= nil
+        self.player.hasBalance = string.find(balanceStr, Falkor.PATTERNS.BALANCE_INDICATOR) ~= nil
+        self.player.hasEquilibrium = string.find(balanceStr, Falkor.PATTERNS.EQUILIBRIUM_INDICATOR) ~= nil
     end
     
     -- Parse rage (can be "ex0-" or "ex 14r-" or "ex14r-")
@@ -153,7 +153,7 @@ function Falkor:startAttack(targetName)
     self.player.autoAttack = true
     
     -- Add our attack function to the action queue
-    self:addAction(Falkor.autoAttackFunction, true, "falkor_autoattack")
+    self:addAction(Falkor.handleAutoAttack, true, "falkor_autoattack")
 end
 
 -- Stop auto-attacking
@@ -178,7 +178,7 @@ Falkor:registerAlias("aliasAttack", "^att( .+)?$", [[
     local target = matches[2]
     if target then
         -- Remove leading space
-        target = string.gsub(target, "^ ", "")
+        target = string.gsub(target, Falkor.PATTERNS.LEADING_SPACE_SINGLE, "")
     else
         -- No target provided, try to use the current target
         target = Falkor.player.target

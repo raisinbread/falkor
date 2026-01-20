@@ -140,8 +140,8 @@ function Falkor:parseBalanceFromPrompt(line)
     local balanceStr = string.match(line, "(%a+)%s*%d*r?%-$")
     
     if balanceStr then
-        self.balance.hasBalance = string.find(balanceStr, "x") ~= nil
-        self.balance.hasEquilibrium = string.find(balanceStr, "e") ~= nil
+        self.balance.hasBalance = string.find(balanceStr, Falkor.PATTERNS.BALANCE_INDICATOR) ~= nil
+        self.balance.hasEquilibrium = string.find(balanceStr, Falkor.PATTERNS.EQUILIBRIUM_INDICATOR) ~= nil
         
         -- Process queue when we gain balance/eq
         if self.balance.hasBalance or self.balance.hasEquilibrium then

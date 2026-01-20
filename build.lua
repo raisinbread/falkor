@@ -10,7 +10,8 @@ local OUTPUT_FILE = BUILD_DIR .. "/" .. PACKAGE_NAME .. ".xml"
 -- Load order for scripts (dependencies first)
 local LOAD_ORDER = {
     "log.lua",
-    "config.lua",  -- Configuration must load first
+    "constants.lua",  -- Constants must load first
+    "config.lua",  -- Configuration must load second
     "main.lua",  -- Load early to provide utility functions
     "balance.lua",  -- Balance tracking must load before modules that use it
     "player.lua",
