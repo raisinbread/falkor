@@ -48,8 +48,6 @@ function Falkor:initConfig()
             showQueueStatus = false,  -- Show queue status in fplayer command
         },
     }
-    
-    Falkor:log("<green>Configuration system initialized.")
 end
 
 -- Get a configuration value by path (e.g., "elixirs.healthThreshold")

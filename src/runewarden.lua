@@ -18,11 +18,6 @@ function Falkor:initRunewarden()
             ready = nil  -- nil = ready, otherwise timestamp when ready
         }
     }
-    
-    Falkor:log("<green>Runewarden battlerage system initialized.")
-    local collideEnabled = self.config.battlerage.collide.enabled and "enabled" or "disabled"
-    local bulwarkEnabled = self.config.battlerage.bulwark.enabled and "enabled" or "disabled"
-    Falkor:log("<cyan>Auto-Collide: " .. collideEnabled .. ", Auto-Bulwark: " .. bulwarkEnabled)
 end
 
 -- Check function for Collide persistence

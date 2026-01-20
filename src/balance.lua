@@ -14,8 +14,6 @@ function Falkor:initBalance()
     -- Enable server-side queueing
     send("config usequeueing on")
     send("config showqueuealerts off")
-    
-    Falkor:log("<green>Balance tracking system initialized (using server-side queueing).")
 end
 
 -- Add a command to the server-side queue

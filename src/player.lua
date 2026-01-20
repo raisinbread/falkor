@@ -33,9 +33,6 @@ function Falkor:initPlayer()
     -- *h = health, *m = mana, *e = endurance, *w = willpower
     -- *b = balance/eq indicators, *R = rage
     send("config prompt custom *hh, *mm, *ee, *ww *b*R-")
-    
-    Falkor:log("<green>Falkor player system initialized.")
-    Falkor:log("<yellow>Prompt configured: health, mana, endurance, willpower, balance/eq, rage")
 end
 
 -- Parse the prompt to extract current game state

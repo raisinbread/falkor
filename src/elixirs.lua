@@ -16,8 +16,6 @@ function Falkor:initElixirs()
         Falkor.elixirs.canDrink = true
         Falkor:tryDrinkElixir()
     ]])
-    
-    Falkor:log("<green>Elixir system initialized.")
 end
 
 -- Check if we need to drink health elixir

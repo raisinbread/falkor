@@ -250,12 +250,14 @@ Falkor:initRegistry()
 -- Reset reload flag on module load
 Falkor.reloadInProgress = false
 
+-- Get registry stats for initialization message
+local stats = Falkor:getRegistryStats()
+
 Falkor:log("<green>========================================")
 Falkor:log("<green>Falkor Combat Script Loaded!")
 Falkor:log("<green>========================================")
+Falkor:log(string.format("<gray>Registered %d triggers and %d aliases", stats.triggers, stats.aliases))
 Falkor:log("<cyan>Combat Commands:")
-Falkor:log("<white>  att <target>        - Begin attacking a target")
-Falkor:log("<white>  stop                - Stop auto-attacking")
 Falkor:log("<white>  fhunt <name>        - Start hunting denizens (e.g., 'fhunt rat')")
 Falkor:log("<white>  fstophunt           - Stop hunting")
 Falkor:log("<white>  combatstart         - Enable combat denizen tracking")
@@ -271,13 +273,12 @@ Falkor:log("<cyan>Utility Commands:")
 Falkor:log("<white>  butterflies-start   - Walk to Vellis and set up butterfly catching")
 Falkor:log("<white>  sellbutterflies     - Walk to Vellis and sell butterflies")
 Falkor:log("<white>  sellrats            - Walk to Hakhim and sell rats")
+Falkor:log("<cyan>System Commands:")
 Falkor:log("<white>  falkor              - Reinstall Falkor module")
-Falkor:log("<cyan>Debug Commands:")
+Falkor:log("<white>  fconfig             - Show/set configuration")
 Falkor:log("<white>  fregistry           - Show registry statistics")
 Falkor:log("<white>  ftriggers           - List all registered triggers")
 Falkor:log("<white>  faliases            - List all registered aliases")
-Falkor:log("<white>  fconfig             - Show current configuration")
-Falkor:log("<white>  fconfig <path> <val> - Set configuration value (e.g., 'fconfig elixirs.healthThreshold 60')")
 Falkor:log("<green>========================================")
 
 -- ============================================

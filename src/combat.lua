@@ -44,8 +44,6 @@ function Falkor:initCombat()
         "gmcp.Char.Items.Remove", 
         "Falkor:handleItemsRemove"
     )
-    
-    self:log("<green>Combat module initialized (disabled by default)")
 end
 
 -- Check if an item is a denizen (has 'm' attribute for mobile)

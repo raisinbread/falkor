@@ -10,7 +10,12 @@
       "tempTimer",
       "cecho",
       "echo",
-      "gmcp"
+      "gmcp",
+      "registerAnonymousEventHandler",
+      "uninstallModule",
+      "installModule",
+      "matches",
+      "line"
     ]
   },
   "runtime": {
