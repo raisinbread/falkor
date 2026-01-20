@@ -7,10 +7,6 @@ Falkor = Falkor or {}
 -- Initialize elixir system
 function Falkor:initElixirs()
     self.elixirs = {
-        -- Configuration (edit these values to customize)
-        healthThreshold = 50,  -- Percentage below which to drink health
-        manaThreshold = 50,    -- Percentage below which to drink mana
-        
         -- Elixir balance tracking
         canDrink = true,       -- Whether we can drink an elixir right now
     }
@@ -32,7 +28,7 @@ function Falkor:needsHealthElixir()
     end
     
     local healthPct = (self.player.health / self.player.maxHealth) * 100
-    return healthPct < self.elixirs.healthThreshold
+    return healthPct < self.config.elixirs.healthThreshold
 end
 
 -- Check if we need to drink mana elixir
@@ -43,7 +39,7 @@ function Falkor:needsManaElixir()
     end
     
     local manaPct = (self.player.mana / self.player.maxMana) * 100
-    return manaPct < self.elixirs.manaThreshold
+    return manaPct < self.config.elixirs.manaThreshold
 end
 
 -- Try to drink an elixir if we can and need to
@@ -70,6 +66,11 @@ end
 
 -- Main elixir check function (called on prompt)
 function Falkor:checkElixirs()
+    -- Only check if elixirs are enabled
+    if not self.config.elixirs.enabled then
+        return
+    end
+    
     -- Try to drink if we need to and can
     self:tryDrinkElixir()
 end

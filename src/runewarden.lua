@@ -5,45 +5,42 @@ Falkor = Falkor or {}
 
 -- Initialize runewarden state
 function Falkor:initRunewarden()
-    -- Battlerage abilities configuration
+    -- Battlerage abilities state (configuration is in config.lua)
     self.battlerageAbilities = {
         collide = {
-            enabled = true,  -- Enabled by default
-            rageCost = 14,
-            cooldown = 16,
             ready = nil  -- nil = ready, otherwise timestamp when ready
         },
         bulwark = {
-            enabled = true,  -- Enabled by default
-            rageCost = 28,
-            cooldown = 45,
             ready = nil  -- nil = ready, otherwise timestamp when ready
         }
     }
     
     Falkor:log("<green>Runewarden battlerage system initialized.")
-    Falkor:log("<cyan>Auto-Collide and Auto-Bulwark enabled by default.")
+    local collideEnabled = self.config.battlerage.collide.enabled and "enabled" or "disabled"
+    local bulwarkEnabled = self.config.battlerage.bulwark.enabled and "enabled" or "disabled"
+    Falkor:log("<cyan>Auto-Collide: " .. collideEnabled .. ", Auto-Bulwark: " .. bulwarkEnabled)
 end
 
 -- Balanceful function for Collide
 -- Called when balance is available
 function Falkor.autoCollide()
     local ability = Falkor.battlerageAbilities.collide
+    local config = Falkor.config.battlerage.collide
     
     -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
-    if ability.enabled and 
+    if config.enabled and 
        Falkor.player.autoAttack and
        Falkor.player.target and 
-       Falkor.player.rage >= ability.rageCost and
+       Falkor.player.rage >= config.rageCost and
        not ability.ready then
         
         send("collide " .. Falkor.player.target)
         
         -- Set cooldown timer
-        ability.ready = os.time() + ability.cooldown
+        ability.ready = os.time() + config.cooldown
         
         -- Schedule cooldown reset
-        tempTimer(ability.cooldown, function()
+        tempTimer(config.cooldown, function()
             ability.ready = nil
         end)
         
@@ -56,21 +53,22 @@ end
 -- Called when balance is available
 function Falkor.autoBulwark()
     local ability = Falkor.battlerageAbilities.bulwark
+    local config = Falkor.config.battlerage.bulwark
     
     -- Only use if enabled, in combat, we have a target, enough rage, and it's off cooldown
-    if ability.enabled and 
+    if config.enabled and 
        Falkor.player.autoAttack and
        Falkor.player.target and 
-       Falkor.player.rage >= ability.rageCost and
+       Falkor.player.rage >= config.rageCost and
        not ability.ready then
         
         send("bulwark")
         
         -- Set cooldown timer
-        ability.ready = os.time() + ability.cooldown
+        ability.ready = os.time() + config.cooldown
         
         -- Schedule cooldown reset
-        tempTimer(ability.cooldown, function()
+        tempTimer(config.cooldown, function()
             ability.ready = nil
         end)
         
@@ -88,6 +86,7 @@ end
 -- Manual collide command
 function Falkor:manualCollide(target)
     local ability = self.battlerageAbilities.collide
+    local config = self.config.battlerage.collide
     
     if not target then
         target = self.player.target
@@ -98,8 +97,8 @@ function Falkor:manualCollide(target)
         return
     end
     
-    if self.player.rage < ability.rageCost then
-        Falkor:log("<yellow>Not enough rage for Collide (need " .. ability.rageCost .. ", have " .. self.player.rage .. ")")
+    if self.player.rage < config.rageCost then
+        Falkor:log("<yellow>Not enough rage for Collide (need " .. config.rageCost .. ", have " .. self.player.rage .. ")")
         return
     end
     
@@ -115,9 +114,10 @@ end
 -- Manual bulwark command
 function Falkor:manualBulwark()
     local ability = self.battlerageAbilities.bulwark
+    local config = self.config.battlerage.bulwark
     
-    if self.player.rage < ability.rageCost then
-        Falkor:log("<yellow>Not enough rage for Bulwark (need " .. ability.rageCost .. ", have " .. self.player.rage .. ")")
+    if self.player.rage < config.rageCost then
+        Falkor:log("<yellow>Not enough rage for Bulwark (need " .. config.rageCost .. ", have " .. self.player.rage .. ")")
         return
     end
     
@@ -134,10 +134,10 @@ end
 Falkor:initRunewarden()
 
 -- Register battlerage abilities with the balance system
-if Falkor.battlerageAbilities.collide.enabled then
+if Falkor.config.battlerage.collide.enabled then
     Falkor:addAction(Falkor.autoCollide, true, "falkor_collide")
 end
-if Falkor.battlerageAbilities.bulwark.enabled then
+if Falkor.config.battlerage.bulwark.enabled then
     Falkor:addAction(Falkor.autoBulwark, true, "falkor_bulwark")
 end
 
@@ -161,22 +161,24 @@ Falkor:registerAlias("aliasBulwark", "^bulwark$", [[
 
 -- Create alias: rage (show current rage status)
 Falkor:registerAlias("aliasRageStatus", "^rage$", [[
-    local collide = Falkor.battlerageAbilities.collide
-    local bulwark = Falkor.battlerageAbilities.bulwark
+    local collideAbility = Falkor.battlerageAbilities.collide
+    local bulwarkAbility = Falkor.battlerageAbilities.bulwark
+    local collideConfig = Falkor.config.battlerage.collide
+    local bulwarkConfig = Falkor.config.battlerage.bulwark
     
     Falkor:log("<cyan>Current Rage: " .. Falkor.player.rage .. "/" .. Falkor.player.maxRage)
-    Falkor:log("<cyan>Collide: Cost " .. collide.rageCost .. " rage, CD " .. collide.cooldown .. "s")
-    Falkor:log("<cyan>Bulwark: Cost " .. bulwark.rageCost .. " rage, CD " .. bulwark.cooldown .. "s")
+    Falkor:log("<cyan>Collide: Cost " .. collideConfig.rageCost .. " rage, CD " .. collideConfig.cooldown .. "s")
+    Falkor:log("<cyan>Bulwark: Cost " .. bulwarkConfig.rageCost .. " rage, CD " .. bulwarkConfig.cooldown .. "s")
     
-    if collide.ready then
-        local remaining = collide.ready - os.time()
+    if collideAbility.ready then
+        local remaining = collideAbility.ready - os.time()
         Falkor:log("<yellow>Collide on cooldown: " .. remaining .. "s remaining")
     else
         Falkor:log("<green>Collide ready!")
     end
     
-    if bulwark.ready then
-        local remaining = bulwark.ready - os.time()
+    if bulwarkAbility.ready then
+        local remaining = bulwarkAbility.ready - os.time()
         Falkor:log("<yellow>Bulwark on cooldown: " .. remaining .. "s remaining")
     else
         Falkor:log("<green>Bulwark ready!")

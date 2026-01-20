@@ -5,7 +5,6 @@ Falkor = Falkor or {}
 -- Initialize butterfly state
 function Falkor:initButterflies()
     self.butterflies = {
-        enabled = true,  -- Enabled by default (edit to false to disable)
         pendingCatches = 0,  -- Number of butterfly catches queued
         startPending = false,  -- Flag for when we're starting butterfly catching
         startStep = 0,  -- Current step in the startup sequence
@@ -50,7 +49,7 @@ Falkor:registerAlias("aliasSellButterflies", "^sellbutterflies$", [[
 -- Create trigger: Catch butterflies when they appear in the room
 -- Only matches room descriptions, not action messages
 Falkor:registerTrigger("triggerButterfly", "(?:There (?:is|are) )?(\\d+) .*butterfl(?:y|ies) here|A(?:n)? .*butterfl(?:y|ies) (?:flits about|beats its|is here|flutters here)|You spot (?:a|an) .*butterfl(?:y|ies)", [[
-    if Falkor.butterflies and Falkor.butterflies.enabled then
+    if Falkor.config.butterflies.enabled and Falkor.butterflies then
         local count = matches[2] and tonumber(matches[2]) or 1
         local word = count == 1 and "butterfly" or "butterflies"
         Falkor:log("<cyan>Detected " .. count .. " " .. word .. "! Queuing catches...")
@@ -60,7 +59,7 @@ Falkor:registerTrigger("triggerButterfly", "(?:There (?:is|are) )?(\\d+) .*butte
 
 -- Create trigger: Retry catching butterfly on failure
 Falkor:registerTrigger("triggerButterflyFailed", "flits away and out of reach, eluding your clumsy attempt", [[
-    if Falkor.butterflies and Falkor.butterflies.enabled then
+    if Falkor.config.butterflies.enabled and Falkor.butterflies then
         Falkor:log("<yellow>Butterfly escaped! Queuing retry...")
         Falkor.butterflies.pendingCatches = Falkor.butterflies.pendingCatches + 1
     end
@@ -68,7 +67,7 @@ Falkor:registerTrigger("triggerButterflyFailed", "flits away and out of reach, e
 
 -- Create trigger: Butterfly successfully caught (don't queue more)
 Falkor:registerTrigger("triggerButterflyCaught", "Success! A", [[
-    if Falkor.butterflies and Falkor.butterflies.enabled then
+    if Falkor.config.butterflies.enabled and Falkor.butterflies then
         Falkor:log("<green>Butterfly caught!")
         -- Don't add more to queue, success means we got it
     end
@@ -76,7 +75,7 @@ Falkor:registerTrigger("triggerButterflyCaught", "Success! A", [[
 
 -- Create trigger: No butterflies in room (clear the queue)
 Falkor:registerTrigger("triggerButterflyNone", "Alas! There are no butterflies to catch here", [[
-    if Falkor.butterflies and Falkor.butterflies.enabled and Falkor.butterflies.pendingCatches > 0 then
+    if Falkor.config.butterflies.enabled and Falkor.butterflies and Falkor.butterflies.pendingCatches > 0 then
         Falkor:log("<yellow>No butterflies left. Clearing queue.")
         Falkor.butterflies.pendingCatches = 0
     end
@@ -84,7 +83,7 @@ Falkor:registerTrigger("triggerButterflyNone", "Alas! There are no butterflies t
 
 -- Create trigger: Not wielding a net (abort catching)
 Falkor:registerTrigger("triggerButterflyNoNet", "You need to be wielding a butterfly net to do that.", [[
-    if Falkor.butterflies and Falkor.butterflies.enabled and Falkor.butterflies.pendingCatches > 0 then
+    if Falkor.config.butterflies.enabled and Falkor.butterflies and Falkor.butterflies.pendingCatches > 0 then
         Falkor:log("<red>Not wielding a net! Aborting butterfly catching.")
         Falkor.butterflies.pendingCatches = 0
     end
@@ -136,7 +135,7 @@ function Falkor:handleButterfliesStep()
         -- Just wielded net, enable butterfly catching
         self.butterflies.startStep = 0
         self.butterflies.startPending = false
-        self.butterflies.enabled = true
+        self.config.butterflies.enabled = true
         Falkor:log("<green>Butterfly catching enabled!")
     end
 end
@@ -154,7 +153,7 @@ function Falkor:handleSellButterfliesStep()
         -- Just gave net, turn off butterfly catching
         self.butterflies.sellStep = 0
         self.butterflies.sellPending = false
-        self.butterflies.enabled = false
+        self.config.butterflies.enabled = false
         Falkor:log("<green>Butterflies sold! Butterfly catching disabled.")
     end
 end

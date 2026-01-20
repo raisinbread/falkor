@@ -46,8 +46,8 @@ Falkor:registerTrigger("triggerRatAppears", "(?:Your eyes are drawn to|With a sq
         Falkor.rats.attackCooldown = true
         Falkor:log("<cyan>Rat detected! Starting auto-attack...")
         Falkor:startAttack("rat")
-        -- Clear cooldown after 3 seconds (safety fallback)
-        tempTimer(3.0, function()
+        -- Clear cooldown after configured time (safety fallback)
+        tempTimer(Falkor.config.rats.attackCooldown, function()
             if Falkor.rats then
                 Falkor.rats.attackCooldown = false
             end

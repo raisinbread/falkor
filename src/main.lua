@@ -268,6 +268,8 @@ Falkor:log("<cyan>Debug Commands:")
 Falkor:log("<white>  fregistry           - Show registry statistics")
 Falkor:log("<white>  ftriggers           - List all registered triggers")
 Falkor:log("<white>  faliases            - List all registered aliases")
+Falkor:log("<white>  fconfig             - Show current configuration")
+Falkor:log("<white>  fconfig <path> <val> - Set configuration value (e.g., 'fconfig elixirs.healthThreshold 60')")
 Falkor:log("<green>========================================")
 
 -- ============================================
@@ -280,7 +282,7 @@ Falkor:registerAlias("aliasReinstall", "^falkor$", [[
     uninstallModule("Falkor")
     
     -- Small delay to ensure clean uninstall, then reinstall
-    tempTimer(0.5, function()
+    tempTimer(Falkor.config.timers.moduleReloadDelay, function()
         installModule("__FALKOR_XML_PATH__")
         echo("\nFalkor module reloaded!\n")
     end)
@@ -350,4 +352,90 @@ Falkor:registerAlias("aliasListAliases", "^faliases$", [[
         end
     end
     Falkor:log("<cyan>========================================")
+]])
+
+-- Create alias: fconfig (show or set configuration)
+Falkor:registerAlias("aliasConfig", "^fconfig( .+)?$", [[
+    local args = matches[2]
+    
+    if not args or args:match("^%s*$") then
+        -- Show all configuration
+        local config = Falkor.config
+        Falkor:log("<cyan>========================================")
+        Falkor:log("<cyan>Falkor Configuration")
+        Falkor:log("<cyan>========================================")
+        
+        -- Elixirs
+        Falkor:log("<white>Elixirs:")
+        Falkor:log("<gray>  Enabled:         " .. (config.elixirs.enabled and "<green>YES" or "<red>NO"))
+        Falkor:log("<gray>  Health Threshold: <yellow>" .. config.elixirs.healthThreshold .. "%")
+        Falkor:log("<gray>  Mana Threshold:   <yellow>" .. config.elixirs.manaThreshold .. "%")
+        
+        -- Battlerage
+        Falkor:log("<white>Battlerage - Collide:")
+        Falkor:log("<gray>  Enabled:  " .. (config.battlerage.collide.enabled and "<green>YES" or "<red>NO"))
+        Falkor:log("<gray>  Rage Cost: <yellow>" .. config.battlerage.collide.rageCost)
+        Falkor:log("<gray>  Cooldown:  <yellow>" .. config.battlerage.collide.cooldown .. "s")
+        
+        Falkor:log("<white>Battlerage - Bulwark:")
+        Falkor:log("<gray>  Enabled:  " .. (config.battlerage.bulwark.enabled and "<green>YES" or "<red>NO"))
+        Falkor:log("<gray>  Rage Cost: <yellow>" .. config.battlerage.bulwark.rageCost)
+        Falkor:log("<gray>  Cooldown:  <yellow>" .. config.battlerage.bulwark.cooldown .. "s")
+        
+        -- Butterflies
+        Falkor:log("<white>Butterflies:")
+        Falkor:log("<gray>  Enabled: " .. (config.butterflies.enabled and "<green>YES" or "<red>NO"))
+        
+        -- Rats
+        Falkor:log("<white>Rats:")
+        Falkor:log("<gray>  Attack Cooldown: <yellow>" .. config.rats.attackCooldown .. "s")
+        
+        -- Timers
+        Falkor:log("<white>Timers:")
+        Falkor:log("<gray>  Module Reload Delay: <yellow>" .. config.timers.moduleReloadDelay .. "s")
+        
+        -- Debug
+        Falkor:log("<white>Debug:")
+        Falkor:log("<gray>  Log Level: <yellow>" .. config.debug.logLevel)
+        Falkor:log("<gray>  Show Queue Status: " .. (config.debug.showQueueStatus and "<green>YES" or "<red>NO"))
+        
+        Falkor:log("<cyan>========================================")
+        Falkor:log("<yellow>Use 'fconfig <path> <value>' to change settings")
+        Falkor:log("<yellow>Example: fconfig elixirs.healthThreshold 60")
+    else
+        -- Set configuration value
+        args = string.gsub(args, "^%s+", "")  -- Remove leading spaces
+        local path, value = string.match(args, "^([^%s]+)%s+(.+)$")
+        
+        if not path or not value then
+            Falkor:log("<red>Error: Invalid format. Use 'fconfig <path> <value>'")
+            Falkor:log("<yellow>Example: fconfig elixirs.healthThreshold 60")
+            return
+        end
+        
+        -- Try to convert value to number or boolean
+        local numValue = tonumber(value)
+        local boolValue = nil
+        if value == "true" or value == "yes" or value == "1" then
+            boolValue = true
+        elseif value == "false" or value == "no" or value == "0" then
+            boolValue = false
+        end
+        
+        local finalValue = boolValue ~= nil and boolValue or (numValue or value)
+        
+        if Falkor:setConfig(path, finalValue) then
+            Falkor:log("<green>Configuration updated: " .. path .. " = " .. tostring(finalValue))
+        else
+            Falkor:log("<red>Error: Could not set configuration path: " .. path)
+            Falkor:log("<yellow>Valid paths include:")
+            Falkor:log("<yellow>  elixirs.healthThreshold, elixirs.manaThreshold, elixirs.enabled")
+            Falkor:log("<yellow>  battlerage.collide.enabled, battlerage.collide.rageCost, battlerage.collide.cooldown")
+            Falkor:log("<yellow>  battlerage.bulwark.enabled, battlerage.bulwark.rageCost, battlerage.bulwark.cooldown")
+            Falkor:log("<yellow>  butterflies.enabled")
+            Falkor:log("<yellow>  rats.attackCooldown")
+            Falkor:log("<yellow>  timers.moduleReloadDelay")
+            Falkor:log("<yellow>  debug.logLevel, debug.showQueueStatus")
+        end
+    end
 ]])
