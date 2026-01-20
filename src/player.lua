@@ -134,9 +134,9 @@ function Falkor:onPrompt(line)
     end
     
     -- Catch butterflies if we have pending catches
-    if self.pendingButterflyCatches and self.pendingButterflyCatches > 0 then
+    if self.butterflies and self.butterflies.pendingCatches and self.butterflies.pendingCatches > 0 then
         self:addAction("catch butterfly")
-        self.pendingButterflyCatches = self.pendingButterflyCatches - 1
+        self.butterflies.pendingCatches = self.butterflies.pendingCatches - 1
     end
 end
 
