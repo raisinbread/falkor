@@ -26,13 +26,23 @@ function Falkor:initPlayer()
         -- Location
         location = nil,
         area = nil,
+        
+        -- Gold pickup cooldown
+        goldReady = true,
+        goldCooldown = 4.0,
     }
     
     -- Configure the game prompt to include the information we need
     -- Format: health, mana, endurance, willpower, balance/eq indicators, rage
     -- *h = health, *m = mana, *e = endurance, *w = willpower
     -- *b = balance/eq indicators, *R = rage
-    send("config prompt custom *hh, *mm, *ee, *ww *b*R-")
+    send("config prompt custom *hh, *mm, *ee, *ww *b*R-", false)
+    
+    -- Configure battlerage messages to show ability cooldowns (not gain messages)
+    send("config ragemsg abcooldowns", false)
+    
+    -- Enable server-side curing
+    send("curing on", false)
 end
 
 -- Parse the prompt to extract current game state
@@ -112,6 +122,17 @@ function Falkor:onPrompt(line)
     end
 end
 
+-- Queue get gold command with cooldown check
+function Falkor:queueGetGold()
+    if self.player.goldReady then
+        self:queueCommand("get gold")
+        self.player.goldReady = false
+        tempTimer(self.player.goldCooldown, function()
+            Falkor.player.goldReady = true
+        end)
+    end
+end
+
 -- Initialize player module
 Falkor:initPlayer()
 
@@ -145,13 +166,8 @@ Falkor:registerTrigger("triggerMustStand", "You must be standing first.", [[
 ]])
 
 -- Create trigger: Gold from corpse (auto-pickup)
-Falkor:registerTrigger("triggerGoldFromCorpse", "sovereigns spills from the corpse", [[
-    Falkor:queueCommand("get gold")
-]])
-
--- Create trigger: Gold in room (auto-pickup)
-Falkor:registerTrigger("triggerGoldInRoom", "a small pile of golden sovereigns", [[
-    Falkor:queueCommand("get gold")
+Falkor:registerTrigger("triggerGoldFromCorpse", "sovereigns spills", [[
+    Falkor:queueGetGold()
 ]])
 
 -- Create trigger: Arrived at destination (sell rats if pending)

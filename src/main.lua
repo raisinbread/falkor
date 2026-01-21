@@ -263,10 +263,6 @@ Falkor:log("<white>  fstophunt           - Stop hunting")
 Falkor:log("<white>  combatstart         - Enable combat denizen tracking")
 Falkor:log("<white>  combatstop          - Disable combat denizen tracking")
 Falkor:log("<white>  fcombat             - Show denizens in current room")
-Falkor:log("<cyan>Battlerage Commands:")
-Falkor:log("<white>  collide [target]    - Manual Collide")
-Falkor:log("<white>  bulwark             - Manual Bulwark")
-Falkor:log("<white>  rage                - Show rage status")
 Falkor:log("<cyan>Status Commands:")
 Falkor:log("<white>  fplayer             - Show player status (vitals, balance, target)")
 Falkor:log("<cyan>Utility Commands:")
@@ -382,23 +378,6 @@ Falkor:registerAlias("aliasConfig", "^fconfig( .+)?$", [[
         Falkor:log("<cyan>Falkor Configuration")
         Falkor:log("<cyan>========================================")
         
-        -- Elixirs
-        Falkor:log("<white>Elixirs:")
-        Falkor:log("<gray>  Enabled:         " .. (config.elixirs.enabled and "<green>YES" or "<red>NO"))
-        Falkor:log("<gray>  Health Threshold: <yellow>" .. config.elixirs.healthThreshold .. "%")
-        Falkor:log("<gray>  Mana Threshold:   <yellow>" .. config.elixirs.manaThreshold .. "%")
-        
-        -- Battlerage
-        Falkor:log("<white>Battlerage - Collide:")
-        Falkor:log("<gray>  Enabled:  " .. (config.battlerage.collide.enabled and "<green>YES" or "<red>NO"))
-        Falkor:log("<gray>  Rage Cost: <yellow>" .. config.battlerage.collide.rageCost)
-        Falkor:log("<gray>  Cooldown:  <yellow>" .. config.battlerage.collide.cooldown .. "s")
-        
-        Falkor:log("<white>Battlerage - Bulwark:")
-        Falkor:log("<gray>  Enabled:  " .. (config.battlerage.bulwark.enabled and "<green>YES" or "<red>NO"))
-        Falkor:log("<gray>  Rage Cost: <yellow>" .. config.battlerage.bulwark.rageCost)
-        Falkor:log("<gray>  Cooldown:  <yellow>" .. config.battlerage.bulwark.cooldown .. "s")
-        
         -- Butterflies
         Falkor:log("<white>Butterflies:")
         Falkor:log("<gray>  Enabled: " .. (config.butterflies.enabled and "<green>YES" or "<red>NO"))
@@ -446,9 +425,6 @@ Falkor:registerAlias("aliasConfig", "^fconfig( .+)?$", [[
         else
             Falkor:log("<red>Error: Could not set configuration path: " .. path)
             Falkor:log("<yellow>Valid paths include:")
-            Falkor:log("<yellow>  elixirs.healthThreshold, elixirs.manaThreshold, elixirs.enabled")
-            Falkor:log("<yellow>  battlerage.collide.enabled, battlerage.collide.rageCost, battlerage.collide.cooldown")
-            Falkor:log("<yellow>  battlerage.bulwark.enabled, battlerage.bulwark.rageCost, battlerage.bulwark.cooldown")
             Falkor:log("<yellow>  butterflies.enabled")
             Falkor:log("<yellow>  rats.attackCooldown")
             Falkor:log("<yellow>  timers.moduleReloadDelay")

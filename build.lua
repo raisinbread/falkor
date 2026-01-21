@@ -15,9 +15,8 @@ local LOAD_ORDER = {
     "main.lua",  -- Load early to provide utility functions
     "balance.lua",  -- Balance tracking must load before modules that use it
     "player.lua",
-    "elixirs.lua",  -- Elixir system depends on player module
     "combat.lua",  -- Combat tracking system
-    "runewarden.lua",
+    "battlerage.lua",  -- Battlerage ability tracking
     "butterflies.lua",
 }
 

@@ -48,16 +48,16 @@ end
 
 -- Check if an item is a denizen (has 'm' attribute for mobile)
 function Falkor:checkIsDenizen(item)
-    return item.attrib and item.attrib:find("m") ~= nil
-end
-
--- Check if an item is gold sovereigns
-function Falkor:checkIsGold(item)
-    if not item.name then
+    if not item.attrib or not item.attrib:find("m") then
         return false
     end
-    local nameLower = string.lower(item.name)
-    return string.find(nameLower, "sovereign", 1, true) ~= nil
+    
+    -- Filter out corpses (they have 'm' attribute but aren't alive)
+    if item.name and item.name:lower():find("corpse") then
+        return false
+    end
+    
+    return true
 end
 
 -- Check if a denizen matches our hunting search string
@@ -95,7 +95,8 @@ function Falkor:findHuntTarget(silent)
                 id = denizen.id,
                 name = denizen.name,
                 attrib = denizen.attrib,
-                icon = denizen.icon
+                icon = denizen.icon,
+                hasShield = false,  -- Track if target has a shield
             }
             
             -- Update last target
@@ -110,7 +111,7 @@ function Falkor:findHuntTarget(silent)
             
             if not silent then
                 self:log(string.format(
-                    "<green>Target acquired: <yellow>%s <gray>(ID: %s)",
+                    "<green>🎯 Target acquired: <yellow>%s <gray>(ID: %s)",
                     denizen.name,
                     denizen.id
                 ))
@@ -166,9 +167,6 @@ function Falkor:handleItemsList(event, ...)
                     attrib = item.attrib,
                     icon = item.icon or "none"
                 }
-            elseif self:checkIsGold(item) then
-                -- Queue gold pickup
-                self:queueCommand("get gold")
             end
         end
     end
@@ -211,9 +209,6 @@ function Falkor:handleItemsAdd(event, ...)
             if self.combat.hunting.enabled and not self.combat.hunting.target then
                 self:findHuntTarget()
             end
-        elseif self:checkIsGold(item) then
-            -- Queue gold pickup
-            self:queueCommand("get gold")
         end
     end
 end
@@ -245,7 +240,7 @@ function Falkor:handleItemsRemove(event, ...)
             
             -- Log target lost
             self:log(string.format(
-                "<yellow>Target lost: <white>%s <gray>(ID: %s)",
+                "<yellow>❌ Target lost: <white>%s <gray>(ID: %s)",
                 removedDenizen.name,
                 removedDenizen.id
             ))
@@ -351,7 +346,7 @@ function Falkor:startHunting(searchString)
     self.combat.hunting.target = nil
     self.combat.hunting.awaitingKillConfirm = false
     
-    self:log(string.format("<green>Hunting started: <yellow>%s", searchString))
+    self:log(string.format("<green>🎯 Hunting started: <yellow>%s", searchString))
     
     -- Try to find a target immediately
     if not self:findHuntTarget() then
@@ -368,7 +363,7 @@ function Falkor:stopHunting()
     -- Remove persistent attack action
     self:removePersistentAction("falkor_hunt_attack")
     
-    self:log("<yellow>Hunting stopped")
+    self:log("<yellow>🛑 Hunting stopped")
 end
 
 -- Handle kill confirmation
@@ -377,7 +372,7 @@ function Falkor:handleKillConfirm()
         return
     end
     
-    self:log("<green>Kill confirmed!")
+    self:log("<green>✅ Kill confirmed!")
     
     -- Clear the target
     self:clearHuntTarget()
@@ -387,6 +382,13 @@ function Falkor:handleKillConfirm()
         if not self:findHuntTarget() then
             self:log("<yellow>No more targets matching '<white>" .. self.combat.hunting.searchString .. "<yellow>' in room")
         end
+    end
+end
+
+-- Handle shield detection
+function Falkor:handleShieldDetected()
+    if self.combat.hunting.target then
+        self.combat.hunting.target.hasShield = true
     end
 end
 
@@ -400,6 +402,11 @@ Falkor:initCombat()
 -- Trigger for kill confirmation
 Falkor:registerTrigger("triggerHuntKillConfirm", "You have slain", [[
     Falkor:handleKillConfirm()
+]])
+
+-- Trigger for shield detection
+Falkor:registerTrigger("triggerShieldDetected", "is protected by a shield", [[
+    Falkor:handleShieldDetected()
 ]])
 
 -- ============================================

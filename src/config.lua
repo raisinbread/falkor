@@ -6,27 +6,6 @@ Falkor = Falkor or {}
 -- Initialize configuration
 function Falkor:initConfig()
     self.config = {
-        -- Elixir system configuration
-        elixirs = {
-            enabled = true,
-            healthThreshold = 50,  -- Percentage below which to drink health elixir
-            manaThreshold = 50,    -- Percentage below which to drink mana elixir
-        },
-        
-        -- Battlerage abilities configuration
-        battlerage = {
-            collide = {
-                enabled = true,   -- Auto-use Collide when conditions are met
-                rageCost = 14,   -- Rage required to use Collide
-                cooldown = 16,   -- Cooldown in seconds
-            },
-            bulwark = {
-                enabled = true,   -- Auto-use Bulwark when conditions are met
-                rageCost = 28,   -- Rage required to use Bulwark
-                cooldown = 45,   -- Cooldown in seconds
-            },
-        },
-        
         -- Butterfly catching configuration
         butterflies = {
             enabled = true,  -- Auto-catch butterflies when detected

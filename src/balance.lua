@@ -88,8 +88,36 @@ end
 
 -- Called when balance is regained (detected from prompt change)
 function Falkor:onBalanceRegained()
-    -- Process persistent actions (queued commands)
+    -- Process persistent callbacks FIRST (direct execution)
+    -- This allows callbacks to queue abilities before persistent actions
     local toRemove = {}
+    
+    for name, callback in pairs(self.balance.persistentCallbacks) do
+        local shouldContinue = true
+        
+        -- If there's a check function, call it
+        if callback.checkFunc and type(callback.checkFunc) == "function" then
+            shouldContinue = callback.checkFunc()
+        end
+        
+        if shouldContinue then
+            -- Execute the callback
+            if type(callback.func) == "function" then
+                callback.func()
+            end
+        else
+            -- Mark for removal
+            table.insert(toRemove, name)
+        end
+    end
+    
+    -- Remove expired callbacks
+    for _, name in ipairs(toRemove) do
+        self.balance.persistentCallbacks[name] = nil
+    end
+    
+    -- Process persistent actions (queued commands) AFTER callbacks
+    toRemove = {}
     
     for name, action in pairs(self.balance.persistentActions) do
         local shouldContinue = true
@@ -117,33 +145,6 @@ function Falkor:onBalanceRegained()
     -- Remove expired actions
     for _, name in ipairs(toRemove) do
         self.balance.persistentActions[name] = nil
-    end
-    
-    -- Process persistent callbacks (direct execution)
-    toRemove = {}
-    
-    for name, callback in pairs(self.balance.persistentCallbacks) do
-        local shouldContinue = true
-        
-        -- If there's a check function, call it
-        if callback.checkFunc and type(callback.checkFunc) == "function" then
-            shouldContinue = callback.checkFunc()
-        end
-        
-        if shouldContinue then
-            -- Execute the callback
-            if type(callback.func) == "function" then
-                callback.func()
-            end
-        else
-            -- Mark for removal
-            table.insert(toRemove, name)
-        end
-    end
-    
-    -- Remove expired callbacks
-    for _, name in ipairs(toRemove) do
-        self.balance.persistentCallbacks[name] = nil
     end
 end
 
