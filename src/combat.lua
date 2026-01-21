@@ -103,7 +103,7 @@ function Falkor:findHuntTarget(silent)
             self.combat.hunting.lastTarget = self.combat.hunting.target
             
             -- Add persistent attack action
-            local attackCommand = "kill " .. denizen.id
+            local attackCommand = "slaughter " .. denizen.id
             self:addPersistentAction(attackCommand, "bal", Falkor.checkHuntAttack, "falkor_hunt_attack")
             
             -- Queue the initial attack immediately
