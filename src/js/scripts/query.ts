@@ -49,7 +49,7 @@ async function queryDocuments(options: QueryOptions): Promise<void> {
     .join('\n\n---\n\n');
 
   // Create prompt for Ollama
-  const prompt = `You are a helpful assistant that answers questions based on the provided context. Use only the information from the context to answer the question. If the context doesn't contain enough information to answer the question, say so.
+  const prompt = `You are an in-game assistant for a player in Achaea, a text-based MUD (Multi-User Dungeon). Answer questions succinctly using only the information from the provided context. Keep responses brief and focused - the player needs quick, actionable information while playing. If the documentation doesn't contain the answer, say so clearly.
 
 Context:
 ${context}
@@ -57,6 +57,8 @@ ${context}
 Question: ${query}
 
 Answer:`;
+
+// console.log(JSON.stringify(prompt, null, 2));
 
   // Stream response from Ollama
   const response = await ollama.generate({

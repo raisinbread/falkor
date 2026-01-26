@@ -196,11 +196,12 @@ end
 -- Get registry statistics
 function Falkor:getRegistryStats()
     if not self.registry then
-        return { triggers = 0, aliases = 0 }
+        return { triggers = 0, aliases = 0, timers = 0 }
     end
     
     local triggerCount = 0
     local aliasCount = 0
+    local timerCount = 0
     
     for _ in pairs(self.registry.triggers) do
         triggerCount = triggerCount + 1
@@ -208,10 +209,16 @@ function Falkor:getRegistryStats()
     for _ in pairs(self.registry.aliases) do
         aliasCount = aliasCount + 1
     end
+    if self.timers and self.timers.active then
+        for _ in pairs(self.timers.active) do
+            timerCount = timerCount + 1
+        end
+    end
     
     return {
         triggers = triggerCount,
         aliases = aliasCount,
+        timers = timerCount,
     }
 end
 
@@ -244,8 +251,109 @@ function Falkor:cleanupRegistry()
     }
 end
 
--- Initialize registry on module load
+-- Comprehensive cleanup function for module uninstall
+function Falkor:cleanup()
+    -- Get stats before cleanup for reporting
+    local stats = self:getRegistryStats()
+    
+    -- Clean up registry (triggers and aliases)
+    self:cleanupRegistry()
+    
+    -- Clean up timers
+    self:cleanupTimers()
+    
+    -- Clean up combat module (disable tracking and clear state)
+    if self.cleanupCombat then
+        self:cleanupCombat()
+    end
+    
+    -- Clear any persistent actions and callbacks
+    if self.balance then
+        self.balance.persistentActions = {}
+        self.balance.persistentCallbacks = {}
+    end
+    
+    -- Log cleanup completion with stats
+    self:log(string.format(
+        "<yellow>Cleanup complete: <white>%d triggers, %d aliases, %d timers removed",
+        stats.triggers,
+        stats.aliases,
+        stats.timers
+    ))
+end
+
+-- Initialize timer tracking
+function Falkor:initTimers()
+    self.timers = {
+        active = {},  -- { id -> { name, time, func } }
+    }
+end
+
+-- Register a timer with automatic cleanup tracking
+-- name: unique identifier for the timer
+-- time: delay in seconds
+-- func: function to execute (can be string or function)
+-- Returns: timer ID
+function Falkor:registerTimer(name, time, func)
+    -- Initialize timers if needed
+    if not self.timers then
+        self:initTimers()
+    end
+    
+    -- Clean up existing timer if it exists
+    if self.timers.active[name] then
+        local entry = self.timers.active[name]
+        if entry.id then
+            killTimer(entry.id)
+        end
+    end
+    
+    -- Create wrapper function that removes from tracking after execution
+    local wrappedFunc
+    if type(func) == "function" then
+        wrappedFunc = function()
+            func()
+            -- Remove from tracking after execution
+            if Falkor.timers and Falkor.timers.active then
+                Falkor.timers.active[name] = nil
+            end
+        end
+    else
+        -- If func is a string, we can't wrap it, so just track it
+        wrappedFunc = func
+    end
+    
+    -- Create timer
+    local id = tempTimer(time, wrappedFunc)
+    
+    -- Store in tracking
+    self.timers.active[name] = {
+        id = id,
+        time = time,
+        func = func,
+    }
+    
+    return id
+end
+
+-- Clean up all tracked timers
+function Falkor:cleanupTimers()
+    if not self.timers then
+        return
+    end
+    
+    for name, entry in pairs(self.timers.active) do
+        if entry.id then
+            killTimer(entry.id)
+        end
+    end
+    
+    self.timers.active = {}
+end
+
+-- Initialize registry and timer tracking on module load
 Falkor:initRegistry()
+Falkor:initTimers()
 
 -- Reset reload flag on module load
 Falkor.reloadInProgress = false
@@ -256,7 +364,7 @@ local stats = Falkor:getRegistryStats()
 Falkor:log("<green>========================================")
 Falkor:log("<green>Falkor Combat Script Loaded!")
 Falkor:log("<green>========================================")
-Falkor:log(string.format("<gray>Registered %d triggers and %d aliases", stats.triggers, stats.aliases))
+Falkor:log(string.format("<gray>Registered %d triggers, %d aliases, %d timers", stats.triggers, stats.aliases, stats.timers))
 Falkor:log("<cyan>Combat Commands:")
 Falkor:log("<white>  fhunt <name>        - Start hunting denizens (e.g., 'fhunt rat')")
 Falkor:log("<white>  fstophunt           - Stop hunting")
@@ -272,11 +380,12 @@ Falkor:log("<white>  sellrats            - Walk to Hakhim and sell rats")
 Falkor:log("<cyan>Knowledge Base:")
 Falkor:log("<white>  fquery <question>   - Query the local knowledge base")
 Falkor:log("<cyan>System Commands:")
-Falkor:log("<white>  falkor              - Reinstall Falkor module")
+Falkor:log("<white>  falkor              - Reinstall Falkor module (with automatic cleanup)")
 Falkor:log("<white>  fconfig             - Show/set configuration")
 Falkor:log("<white>  fregistry           - Show registry statistics")
 Falkor:log("<white>  ftriggers           - List all registered triggers")
 Falkor:log("<white>  faliases            - List all registered aliases")
+Falkor:log("<white>  ftimers             - List all active timers")
 Falkor:log("<green>========================================")
 
 -- ============================================
@@ -292,10 +401,15 @@ Falkor:registerAlias("aliasReinstall", "^falkor$", [[
     
     Falkor.reloadInProgress = true
     
+    -- Run comprehensive cleanup before uninstall
+    Falkor:cleanup()
+    
     -- Uninstall the existing module first
     uninstallModule("Falkor")
     
     -- Small delay to ensure clean uninstall, then reinstall
+    -- Note: Using tempTimer directly here since we're about to uninstall
+    -- and this timer needs to survive the cleanup
     tempTimer(Falkor.config.timers.moduleReloadDelay, function()
         installModule("__FALKOR_XML_PATH__")
         echo("\nFalkor module reloaded!\n")
@@ -311,6 +425,7 @@ Falkor:registerAlias("aliasRegistry", "^fregistry$", [[
     Falkor:log("<cyan>========================================")
     Falkor:log("<white>Triggers:  <yellow>" .. stats.triggers)
     Falkor:log("<white>Aliases:   <yellow>" .. stats.aliases)
+    Falkor:log("<white>Timers:    <yellow>" .. stats.timers)
     Falkor:log("<cyan>========================================")
 ]])
 
@@ -337,6 +452,31 @@ Falkor:registerAlias("aliasListTriggers", "^ftriggers$", [[
             Falkor:log("<white>" .. trigger.name .. " <gray>(" .. type .. ")")
             Falkor:log("<gray>  Pattern: " .. pattern)
             Falkor:log("<gray>  Status:  " .. status)
+        end
+    end
+    Falkor:log("<cyan>========================================")
+]])
+
+-- Create alias: ftimers (list all active timers)
+Falkor:registerAlias("aliasListTimers", "^ftimers$", [[
+    local timers = Falkor.timers and Falkor.timers.active or {}
+    Falkor:log("<cyan>========================================")
+    
+    local count = 0
+    for _ in pairs(timers) do
+        count = count + 1
+    end
+    
+    Falkor:log("<cyan>Active Timers (" .. count .. ")")
+    Falkor:log("<cyan>========================================")
+    
+    if count == 0 then
+        Falkor:log("<yellow>No active timers.")
+    else
+        for name, entry in pairs(timers) do
+            Falkor:log("<white>" .. name)
+            Falkor:log("<gray>  Delay: <yellow>" .. entry.time .. "s")
+            Falkor:log("<gray>  ID: <yellow>" .. (entry.id or "unknown"))
         end
     end
     Falkor:log("<cyan>========================================")

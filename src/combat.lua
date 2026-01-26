@@ -8,6 +8,15 @@ Falkor = Falkor or {}
 
 -- Initialize combat state
 function Falkor:initCombat()
+    -- Clean up existing handlers if reinitializing
+    if self.combat and self.combat.handlers then
+        for name, handlerId in pairs(self.combat.handlers) do
+            if handlerId then
+                killAnonymousEventHandler(handlerId)
+            end
+        end
+    end
+    
     self.combat = {
         -- Denizens currently in the room
         -- Structure: { [id] = { id = "...", name = "...", attrib = "...", icon = "..." } }
@@ -44,6 +53,38 @@ function Falkor:initCombat()
         "gmcp.Char.Items.Remove", 
         "Falkor:handleItemsRemove"
     )
+end
+
+-- Clean up combat module resources
+function Falkor:cleanupCombat()
+    if not self.combat then
+        return
+    end
+    
+    -- Clean up event handlers
+    if self.combat.handlers then
+        for name, handlerId in pairs(self.combat.handlers) do
+            if handlerId then
+                killAnonymousEventHandler(handlerId)
+            end
+        end
+        self.combat.handlers = {}
+    end
+    
+    -- Clear hunting state
+    if self.combat.hunting then
+        self:clearHuntTarget()
+        self.combat.hunting = {
+            enabled = false,
+            searchString = nil,
+            target = nil,
+            lastTarget = nil,
+            awaitingKillConfirm = false,
+        }
+    end
+    
+    -- Clear denizens
+    self.combat.denizens = {}
 end
 
 -- Check if an item is a denizen (has 'm' attribute for mobile)

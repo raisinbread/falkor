@@ -74,7 +74,12 @@ Building creates a new Mudlet XML package file.
   - Example: `fquery Explain devotion`
 
 ### System
-- `falkor` - Reinstall Falkor module
+- `falkor` - Reinstall Falkor module (automatically cleans up and shows what was removed)
+- `fregistry` - Show registry statistics (triggers, aliases, timers)
+- `ftriggers` - List all registered triggers
+- `faliases` - List all registered aliases
+- `ftimers` - List all active timers
+- `fconfig` - Show or set configuration values
 
 ## Features
 
@@ -114,6 +119,27 @@ The code follows Lua best practices:
 - Edit files in `src/` directory
 - Build the project
 - Issue the `falkor` command in Mudlet to re-load the module.
+
+### Clean Reload System
+
+Falkor includes a comprehensive cleanup system to prevent duplicate triggers, aliases, and event handlers when reloading:
+
+**Automatic Cleanup**: The `falkor` command automatically cleans up all resources before reinstalling and shows you what was removed:
+- All registered triggers and aliases
+- All event handlers (GMCP listeners, etc.)
+- All tracked timers
+- Persistent actions and callbacks
+- Combat state and hunting targets
+
+**Registry System**: All triggers, aliases, and timers are tracked in a central registry:
+- Use `fregistry` to see counts of registered resources
+- Use `ftriggers`, `faliases`, or `ftimers` to list specific resources
+- The registry automatically prevents duplicates by cleaning up old instances before creating new ones
+
+**Best Practices**:
+- Always use `Falkor:registerTrigger()` and `Falkor:registerAlias()` instead of `tempTrigger()` and `tempAlias()`
+- Use `Falkor:registerTimer()` for timers that should be tracked and cleaned up
+- The `falkor` command is now safe to use repeatedly without needing to reset the client
 
 ## Pinecone Integration
 
