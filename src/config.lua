@@ -21,6 +21,13 @@ function Falkor:initConfig()
             moduleReloadDelay = 1.5,  -- Delay in seconds before reinstalling module
         },
         
+        -- Query configuration
+        query = {
+            projectPath = "/Users/john/Projects/falkor",  -- Absolute path to Falkor project
+            nodePath = "/Users/john/.nvm/versions/node/v20.15.0/bin/node",  -- Absolute path to node
+            pnpmPath = "/Users/john/Library/pnpm/pnpm",  -- Absolute path to pnpm
+        },
+        
         -- Debug and logging configuration
         debug = {
             logLevel = "info",  -- "debug", "info", "warn", "error"

@@ -67,6 +67,13 @@ Building creates a new Mudlet XML package file.
 - `butterflies-start` - Walk to Vellis and set up butterfly catching
 - `sellbutterflies` - Walk to Vellis and sell butterflies
 - `sellrats` - Walk to Hakhim and sell rats
+
+### Knowledge Base
+- `fquery <question>` - Query the local knowledge base (requires Pinecone setup)
+  - Example: `fquery What are the tenets of Targossas?`
+  - Example: `fquery Explain devotion`
+
+### System
 - `falkor` - Reinstall Falkor module
 
 ## Features
@@ -107,3 +114,46 @@ The code follows Lua best practices:
 - Edit files in `src/` directory
 - Build the project
 - Issue the `falkor` command in Mudlet to re-load the module.
+
+## Pinecone Integration
+
+This project includes TypeScript tooling for document ingestion and querying with Pinecone.
+
+### Setup
+
+1. Install dependencies: `pnpm install`
+2. Copy `.env.example` to `.env` and configure your Pinecone credentials
+3. Install Ollama and pull the required models:
+   - `ollama pull nomic-embed-text` (for embeddings)
+   - `ollama pull llama3.2:3b` (for responses)
+4. Place text files (`.txt`, `.md`, `.markdown`) in the `docs/` directory
+5. Run ingestion: `pnpm ingest:docs`
+
+### Scripts
+
+#### Ingestion
+```bash
+# Ingest all documents from the docs directory
+pnpm ingest:docs
+
+# Ingest a specific file
+pnpm ingest path/to/file.txt
+```
+
+#### Query
+```bash
+# Query the knowledge base
+pnpm query "What are the tenets of Targossas?"
+
+# Query with custom number of results (default: 5)
+pnpm query "What is devotion?" --topK 10
+
+# Query with a different model (default: llama3.2:3b)
+pnpm query "Explain the Bloodsworn" --model llama3.2:3b
+```
+
+The query script will:
+1. Generate an embedding for your question
+2. Search Pinecone for the most relevant document chunks
+3. Feed the results to a local Ollama model (llama3.2:3b by default)
+4. Stream the AI-generated response based on your documents
