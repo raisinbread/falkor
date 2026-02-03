@@ -6,8 +6,6 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch",
-    "ingest": "node --max-old-space-size=4096 --import tsx src/js/scripts/ingest.ts",
-    "ingest:docs": "node --max-old-space-size=4096 --import tsx src/js/scripts/ingest.ts docs",
     "query": "node --import tsx src/js/scripts/query.ts"
   },
   "keywords": [],
@@ -19,8 +17,6 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@pinecone-database/pinecone": "^4.0.0",
-    "dotenv": "^16.4.7",
     "ollama": "^0.6.3"
   }
 }
