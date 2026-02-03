@@ -3,13 +3,16 @@ import { getIndex } from '../lib/pinecone.js';
 import { resolve, join, extname } from 'path';
 import { Ollama } from 'ollama';
 
+const CHUNK_SIZE = 6000;
+const OVERLAP = 1000;
+
 interface IngestOptions {
   filePath: string;
   chunkSize?: number;
   overlap?: number;
 }
 
-function* chunkTextGenerator(text: string, chunkSize: number = 1000, overlap: number = 200): Generator<{ chunk: string; index: number }> {
+function* chunkTextGenerator(text: string, chunkSize: number = CHUNK_SIZE, overlap: number = OVERLAP): Generator<{ chunk: string; index: number }> {
   const textLength = text.length;
   let start = 0;
   let index = 0;
@@ -72,7 +75,7 @@ async function deleteExistingChunks(resolvedPath: string): Promise<void> {
 }
 
 export async function ingestDocument(options: IngestOptions): Promise<void> {
-  const { filePath, chunkSize = 1000, overlap = 200 } = options;
+  const { filePath, chunkSize = CHUNK_SIZE, overlap = OVERLAP } = options;
 
   const resolvedPath = resolve(filePath);
   console.log(`Reading document from: ${resolvedPath}`);

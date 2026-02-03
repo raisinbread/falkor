@@ -1,8 +1,10 @@
-12.3.6 Hallowed Targossas, the Guardians' Hearth
+# Targossas
 
                  Heraldic Arms: Sable, on a roundel Or, a Sword of Dunamis
                                 Tenne
-                         [CITY LEADERS]
+
+# City Leaders of Targossas
+
                       Dawnlord: Aroan
                         Patron: Aurora and Deucalion
                       Lumarchs: Aroan, Erishka, Karalden, Myrddin, and Yen
@@ -22,6 +24,9 @@
 
                             [HONOURS]
                 City Accolades: 8 (ACCOLADES TARGOSSAS for details)
+
+
+# City Description and Background
 
 Nestled within the familiar embrace of the Pash Valley, Targossas, the Guardians' Hearth, is a
 refuge for the defenders of Creation. Shaped from Memory by the will of Lady Aurora and Lord 
