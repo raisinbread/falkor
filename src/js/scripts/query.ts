@@ -103,8 +103,6 @@ async function queryDocuments(options: QueryOptions): Promise<void> {
       for (const toolCall of response.message.tool_calls) {
         if (toolCall.function.name === 'fetch_document') {
           const documentId = toolCall.function.arguments.document_id as DocumentId;
-          console.log(`\n[Fetching ${documentId}...]\n`);
-
           const documentText = fetchDocument(documentId);
 
           // Add the tool response with a strong reminder to fulfill the original request
@@ -123,7 +121,6 @@ async function queryDocuments(options: QueryOptions): Promise<void> {
         // We have a text response, display it
         conversationComplete = true;
         console.log(response.message.content);
-        console.log('\n');
       } else {
         // No content and no tool calls - this shouldn't happen, but handle it
         conversationComplete = true;
@@ -131,10 +128,6 @@ async function queryDocuments(options: QueryOptions): Promise<void> {
       }
     }
   }
-  
-  // Print out the full conversation history
-  // console.log('\n--- Conversation History ---');
-  // console.log(JSON.stringify(messages, null, 2));
 }
 
 // CLI execution
