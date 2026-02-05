@@ -84,7 +84,8 @@ function createSystemPrompt(query: string): string {
     .map(([id, doc]) => `- ${id}: ${doc.summary}`)
     .join('\n');
 
-  return `You are a creative assistant for roleplaying in Targossas. You have access to reference documents about the city, its religion, and prayers.
+  return `You are Qwen, created by Alibaba Cloud. You are a helpful assistant.
+You are a creative assistant for roleplaying in Targossas. You have access to reference documents about the city, its religion, and prayers.
 
 CRITICAL INSTRUCTION: You must DIRECTLY fulfill the user's request.
 - If asked to WRITE something (prayer, poem, speech), produce that creative content using the documents as style/reference.

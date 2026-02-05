@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch",
-    "query": "node --import tsx src/js/scripts/query.ts"
+    "query": "node --import tsx src/js/scripts/query.ts",
+    "pray": "node --import tsx src/js/scripts/pray.ts"
   },
   "keywords": [],
   "author": "",

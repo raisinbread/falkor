@@ -34,9 +34,9 @@ function Falkor:executeQuery(queryString)
     -- self:log("")
     
     -- Build the command
-    local projectPath = Falkor.config.query.projectPath
-    local nodePath = Falkor.config.query.nodePath
-    local pnpmPath = Falkor.config.query.pnpmPath
+    local projectPath = Falkor.config.paths.projectPath
+    local nodePath = Falkor.config.paths.nodePath
+    local pnpmPath = Falkor.config.paths.pnpmPath
     local command = string.format(
         'cd "%s" && PATH="%s:$PATH" "%s" query "%s" 2>&1',
         projectPath,

@@ -69,9 +69,12 @@ Building creates a new Mudlet XML package file.
 - `sellrats` - Walk to Hakhim and sell rats
 
 ### Knowledge Base
-- `fquery <question>` - Query the local knowledge base (requires Pinecone setup)
+- `fquery <question>` - Query the local knowledge base (requires Ollama)
   - Example: `fquery What are the tenets of Targossas?`
   - Example: `fquery Explain devotion`
+- `fpray <prompt>` - Compose a prayer in the style of the Breviary of Targossas
+  - Example: `fpray Compose a prayer for victory in battle`
+  - Example: `fpray Write a prayer of thanks for the Bloodsworn`
 
 ### System
 - `falkor` - Reinstall Falkor module (automatically cleans up and shows what was removed)
@@ -171,15 +174,25 @@ pnpm ingest path/to/file.txt
 # Query the knowledge base
 pnpm query "What are the tenets of Targossas?"
 
-# Query with custom number of results (default: 5)
-pnpm query "What is devotion?" --topK 10
-
-# Query with a different model (default: llama3.2:3b)
-pnpm query "Explain the Bloodsworn" --model llama3.2:3b
+# Query with a different model (default: qwen2.5:7b)
+pnpm query "Explain the Bloodsworn" --model qwen2.5:7b
 ```
 
 The query script will:
-1. Generate an embedding for your question
-2. Search Pinecone for the most relevant document chunks
-3. Feed the results to a local Ollama model (llama3.2:3b by default)
-4. Stream the AI-generated response based on your documents
+1. Use the local Ollama model to determine which documents to fetch
+2. Retrieve relevant document content
+3. Generate a response based on the documents
+
+#### Prayer Composition
+```bash
+# Compose a prayer in Breviary style
+pnpm pray "Compose a prayer for courage in battle"
+
+# Compose with a different model (default: qwen2.5:7b)
+pnpm pray "Write a prayer of thanks" --model qwen2.5:7b
+```
+
+The prayer script will:
+1. Load the full text of the Breviary of Targossas
+2. Use it as a style reference for the LLM
+3. Generate a new prayer based on your prompt in the Breviary's style

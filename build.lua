@@ -19,6 +19,7 @@ local LOAD_ORDER = {
     "battlerage.lua",  -- Battlerage ability tracking
     "butterflies.lua",
     "query.lua",  -- Knowledge base query interface
+    "pray.lua",  -- Prayer composition interface
 }
 
 -- Escape XML special characters (only &, <, > need escaping in element content)
