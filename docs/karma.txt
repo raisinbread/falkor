@@ -1,0 +1,75 @@
+Composed by: Aroan on or about the 13th of Scarlatan, 990 AF.
+
+Karma is a force of fate which occultists use to twist reality around
+them. It is sometimes imbued within objects which have unique focal
+points in history. By studying these items, occultists gain karma to
+fuel their chaotic powers.
+
+The following is a list of karmic items, the denizens that hold them,
+and where they are found. As servants of Good, it is our duty to ensure
+that these items are not allowed to fall into the hands of our enemies.
+
+** Karmic items should be destroyed into the Chalice of Purity **
+
+The Chalice of Purity is in the Alcove of Purity inside the Temple of
+Righteous Fire. WALK TO DEUCALIONTEMPLE, and once you arrive, head east.
+
+This will ensure that the item is properly taken out of circulation for
+that cycle, thereby slowing the accumulation of karmic power by
+occultists.
+
+To see the total amount of karma that has been purged simply:
+TOUCH CHALICE
+
+To see a breakdown of all individuals and the amount of karma they have
+removed from Creation:
+TOUCH CHALICE ALL
+
+Denizens are listed below in alphabetical order.
+
+------------------------------------------------------------------------
+NAME             TYPE               LOCATION                 %     KARMA
+Acolytes        -Fetish-            Great Rock               1         8
+Arinas          -Book-              Great Rock               2        16
+Balai           -Bracelet-          Ulangi                   5        40
+Bearnath        -Mask-              Great Rock               4        32
+Belladona       -Book-              Belladona's Keep        50       400
+Crypt Beast     -Locket-            Quisalis Caves          11        88
+Cultists        -Masks-             Great Rock               1         8
+Ecalith         -Eye-               Nimick                  15       120
+Elegnem         -Book-              Tomacula                 8        64
+Eriador         -Book-              Istarion                10        80
+Gloom           -Book-              Belladona's Keep        12        96
+Great Mhunna    -Book-              Moghedu                 15       120
+Haag            -Cauldron-          Ashtan Bog               6        48
+Haruspexes      -Talisman-          Isarion                  3        24
+Hellithia       -Sceptre-           Great Rock               1         8
+Hycanthus       -Wand-              Vashnars                 3        24
+Istishia        -Gem-               Darkenwood               9        72
+Inish           -Bell-              Great Rock               2        16
+Initiates       -Fetish-            Great Rock               1         8
+Lachesis        -Spider-            Azdun                   12        96
+Lightning Eagle -Talon-             Meropis                150      1200
+Minstrel        -Book-              Tasurke                  4        32
+Nadja           -Book-              Manusha                  5        40
+Ophidians       -Medallions-        Great Rock               1         8
+Oshalo          -Book-              Moghedu                  8        64
+Qitala          -Necklace-          Zanzibaar               30       240
+Ritualists      -Fetish-            Great Rock               1         8
+Shanugis        -Book-              Shastaan                 8        64
+Spawn UH        -Brain-             Ashtan/Roaming         300      2400
+Ta'hena         -Book-              Aalen                    5        40
+Tinja           -Feather-           Genji                    1         8
+Tordahl         -Gem-               Shamtota Hills          10        80
+Tsellias        -Mortar/Pestle-     Aalen                    5        40
+Ulgase          -Skull-             Azdun                    4        32
+Volandria       -Seashell-          Riparium                 6        48
+Xulu            -Necklace-          Dun Fortress             5        32
+Yudhisthira     -Gem-               Polyargos              200      1600
+Zsarachnor      -Book-              Azdun                  150      1200
+------------------------------------------------------------------------
+
+Note
+----
+
+This scroll is referenced by TASK 260. Don't rename or delete it!

@@ -1,0 +1,97 @@
+Composed by: Yen on or about the 2nd of Ero, 942 AF.
+
+The Font of Targossas
+---------------------
+
+What it is
+---------------------
+The Flames of the Dawn is the font of Targossas. The font is a store of
+power that can be called upon to provide an additional defense for the
+city. It is located at Scythia Square (WALK TO FONT).
+
+How it works
+---------------------
+When called upon by a soldier ranked four or higher in the military, the
+font will expend power to affect enemies within the city in certain
+ways. There are three options:
+
+- WEAKEN will cause an affliction that increases the amount of damage an
+enemy takes over time. The longer enemies remain in the city, the more
+effective damaging attacks will be on them. (50% font cost)
+
+- QUAKE is a short lasting empowerment that will disrupt propping. (9%
+font cost)
+
+- DECAY reduces the lifespan of persistent room effects, causing rites,
+vibrations, gravehands, and harmonics to decay at a faster rate. (19%
+font cost)
+
+- SENSE shows everyone within the city. (2-3% font cost)
+
+Generally, WEAKEN is used in standard defense. After every use, the font
+will need to be replenished.
+
+How to fill
+---------------------
+To fill the font you must seek out lesser eidolons and PUT them IN the
+FLAMES until it is full. There are approximately 8-9 eidolons per area.
+Please note that they are highly mobile.
+
+Abominations (Mhaldor):
+Abominations are located on Mhaldor Isle. Be wary of attack by
+Mhaldorians when hunting them.
+
+Things of Chaos (Ashtan):
+These can be found in the Mhojave Desert. They are often the easiest to
+gather.
+
+Lamassu (Hashan):
+These can be found in North Ithmia.
+
+Mountain Drakes (Cyrene):
+These can be found in Southern Vashnars.
+                                     
+Flower Maidens (Eleusis):
+Found within the Western Ithmia.
+
+
+Duties
+---------------------
+Arbiters (AR4) or higher in the Army may travel to the font and EMPOWER
+FONT. Aides to security may check the status of the font's power from
+within the Council Chamber with CITY FONT STATUS.
+
+Citizens are expected to fill the font immediately after it is used.
+
+For those unable to check the font status in the Council Chamber, can
+gauge how full the font is when you see the following occur:
+
+25%:
+A dazzling haze of motes shimmer briefly above the Flames of the Dawn
+before cascading gracefully back into the basin.
+         
+50%:
+Golden motes erupt from the Flames of the Dawn, swirling brilliantly
+above the onyx basin before receding back into its depths.
+
+75%:
+The fiery conflagration within the Flames of the Dawn flares brightly,
+increasing in ferocity.
+
+100%:
+The fire within the onyx basin sputters briefly, brilliant sparks
+flaring upwards.
+The fiery tendrils grow in size, blazing trails of light pulsing from
+the Flames of the Dawn, casting incandescent motes high into the air.
+
+You will know the font is full when burning too intensely to be
+approached. Generally, the city logs will be updated regularly with the
+status of the font if and when it is not full, so READLOG TARGOSSAS to
+see the most recent estimate.
+
+Please see HELP CITYDESTRUCTION for further details.
+
+Note
+----
+
+This scroll is referenced by TASK 259. Don't rename or delete it!
